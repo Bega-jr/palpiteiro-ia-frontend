@@ -40,8 +40,8 @@
     <div id="historico"></div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
 
     <script>
         // Configuração do Firebase
@@ -56,20 +56,27 @@
         };
 
         // Inicializar Firebase
+        let auth;
         try {
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK não foi carregado.');
+            }
             firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            console.log('Firebase inicializado com sucesso.');
         } catch (error) {
-            console.error('Erro ao inicializar Firebase:', error);
-            document.getElementById('taxas').textContent = 'Erro ao carregar o Firebase.';
+            console.error('Erro ao inicializar Firebase:', error.message);
+            document.getElementById('taxes').textContent = 'Erro ao carregar o Firebase: ' + error.message;
+            return;
         }
-        const auth = firebase.auth();
+
         const backendUrl = 'https://palpiteiro-ia-backend-docker.onrender.com';
 
         // Monitorar estado de autenticação
-        auth.onAuthStateChanged(user => {
-            const loginButton = document.getElementById('loginButton');
-            const userInfo = document.getElementById('userInfo');
-            try {
+        try {
+            auth.onAuthStateChanged(user => {
+                const loginButton = document.getElementById('loginButton');
+                const userInfo = document.getElementById('userInfo');
                 if (user) {
                     loginButton.style.display = 'none';
                     userInfo.textContent = `Bem-vindo, ${user.displayName}!`;
@@ -79,104 +86,123 @@
                     userInfo.textContent = '';
                     document.getElementById('taxas').textContent = 'Faça login para ver as taxas de acerto.';
                 }
-            } catch (error) {
-                console.error('Erro no onAuthStateChanged:', error);
-                document.getElementById('taxas').textContent = 'Erro ao verificar autenticação.';
-            }
-        });
+            });
+        } catch (error) {
+            console.error('Erro no onAuthStateChanged:', error.message);
+            document.getElementById('taxas').textContent = 'Erro ao verificar autenticação: ' + error.message;
+        }
 
         // Login com Google
         document.getElementById('loginButton').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then(result => {
-                    // Login bem-sucedido
-                    console.log('Login bem-sucedido:', result.user.displayName);
-                })
-                .catch(error => {
-                    console.error('Erro no login:', error);
-                    document.getElementById('taxas').textContent = 'Erro ao fazer login: ' + error.message;
-                });
+            try {
+                auth.signInWithPopup(provider)
+                    .then(result => {
+                        console.log('Login bem-sucedido:', result.user.displayName);
+                    })
+                    .catch(error => {
+                        console.error('Erro no login:', error.message);
+                        document.getElementById('taxas').textContent = 'Erro ao fazer login: ' + error.message;
+                    });
+            } catch (error) {
+                console.error('Erro ao iniciar login:', error.message);
+                document.getElementById('taxas').textContent = 'Erro ao iniciar login: ' + error.message;
+            }
         });
 
         // Carregar taxas de acerto
         function carregarTaxasAcerto() {
-            auth.currentUser.getIdToken()
-                .then(token => {
-                    fetch(`${backendUrl}/taxas_acerto`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        document.getElementById('taxas').textContent = 
-                            `Taxas de Acerto: 11 números: ${data.taxas.acertos_11}, 12 números: ${data.taxas.acertos_12}`;
+            try {
+                auth.currentUser.getIdToken()
+                    .then(token => {
+                        fetch(`${backendUrl}/taxas_acerto`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(data => {
+                            document.getElementById('taxas').textContent = 
+                                `Taxas de Acerto: 11 números: ${data.taxas.acertos_11}, 12 números: ${data.taxas.acertos_12}`;
+                        })
+                        .catch(error => {
+                            console.error('Erro ao carregar taxas:', error.message);
+                            document.getElementById('taxas').textContent = 'Erro ao carregar taxas de acerto: ' + error.message;
+                        });
                     })
                     .catch(error => {
-                        console.error('Erro ao carregar taxas:', error);
-                        document.getElementById('taxas').textContent = 'Erro ao carregar taxas de acerto.';
+                        console.error('Erro ao obter token:', error.message);
+                        document.getElementById('taxas').textContent = 'Erro ao obter token: ' + error.message;
                     });
-                })
-                .catch(error => {
-                    console.error('Erro ao obter token:', error);
-                    document.getElementById('taxas').textContent = 'Erro ao obter token de autenticação.';
-                });
+            } catch (error) {
+                console.error('Erro em carregarTaxasAcerto:', error.message);
+                document.getElementById('taxas').textContent = 'Erro ao carregar taxas: ' + error.message;
+            }
         }
 
         // Gerar palpites
         document.getElementById('gerarPalpites').addEventListener('click', () => {
-            fetch(`${backendUrl}/gerar_palpites`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('palpites').innerHTML = data.palpites
-                    .map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`)
-                    .join('');
-            })
-            .catch(error => {
-                console.error('Erro ao gerar palpites:', error);
-                document.getElementById('palpites').textContent = 'Erro ao gerar palpites.';
-            });
+            try {
+                fetch(`${backendUrl}/gerar_palpites`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('palpites').innerHTML = data.palpites
+                        .map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`)
+                        .join('');
+                })
+                .catch(error => {
+                    console.error('Erro ao gerar palpites:', error.message);
+                    document.getElementById('palpites').textContent = 'Erro ao gerar palpites: ' + error.message;
+                });
+            } catch (error) {
+                console.error('Erro ao iniciar palpites:', error.message);
+                document.getElementById('palpites').textContent = 'Erro ao gerar palpites: ' + error.message;
+            }
         });
 
         // Carregar histórico
         function carregarHistorico() {
-            fetch(`${backendUrl}/historico`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('historico').innerHTML = data.sorteios
-                    .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
-                    .join('');
-            })
-            .catch(error => {
-                console.error('Erro ao carregar histórico:', error);
-                document.getElementById('historico').textContent = 'Erro ao carregar histórico.';
-            });
+            try {
+                fetch(`${backendUrl}/historico`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('historico').innerHTML = data.sorteios
+                        .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
+                        .join('');
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar histórico:', error.message);
+                    document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
+                });
+            } catch (error) {
+                console.error('Erro ao iniciar histórico:', error.message);
+                document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
+            }
         }
 
         // Carregar histórico ao iniciar
         try {
             carregarHistorico();
         } catch (error) {
-            console.error('Erro ao carregar histórico inicial:', error);
-            document.getElementById('historico').textContent = 'Erro ao carregar histórico.';
+            console.error('Erro ao carregar histórico inicial:', error.message);
+            document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
         }
     </script>
 </body>
