@@ -4,48 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palpiteiro IA - Lotofácil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #1d4ed8;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #palpites, #historico, #taxas, #userInfo {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: white;
-            border-radius: 5px;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body>
-    <h1>Palpiteiro IA - Lotofácil</h1>
-    <button id="loginButton">Entrar com Google</button>
-    <p id="userInfo"></p>
-    <button id="gerarPalpites">Gerar Palpites Grátis</button>
-    <div id="palpites"></div>
-    <div id="taxas">Faça login para ver as taxas de acerto.</div>
-    <div id="historico"></div>
+<body class="bg-gray-100 font-sans">
+    <!-- Cabeçalho -->
+    <header class="bg-blue-600 text-white py-4 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Palpiteiro IA - Lotofácil</h1>
+            <div id="auth-section" class="flex items-center space-x-4">
+                <span id="user-name" class="hidden"></span>
+                <button id="login-btn" class="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-200">Entrar com Google</button>
+                <button id="logout-btn" class="hidden bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Sair</button>
+            </div>
+        </div>
+    </header>
 
-    <!-- Firebase SDK Modular -->
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Seção de Palpites -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Gerar Palpites</h2>
+            <button id="gerar-palpites-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 flex items-center">
+                <span>Gerar Palpites Grátis</span>
+                <div id="palpites-spinner" class="spinner ml-2"></div>
+            </button>
+            <div id="palpites" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- Seção de Taxas de Acerto -->
+        <section class="mb-8 hidden" id="taxas-section">
+            <h2 class="text-xl font-semibold mb-4">Taxas de Acerto</h2>
+            <div id="taxas" class="bg-white p-4 rounded-lg shadow"></div>
+        </section>
+
+        <!-- Seção de Histórico -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4">Histórico de Sorteios</h2>
+            <div id="historico-spinner" class="spinner mx-auto"></div>
+            <div id="historico" class="bg-white p-4 rounded-lg shadow overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-2">Concurso</th>
+                            <th class="p-2">Data</th>
+                            <th class="p-2">Números</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historico-table"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDIAcBJg1FLwMBAKhAcKePw-bxi1piVlXw",
             authDomain: "palpiteiro-ia.firebaseapp.com",
@@ -56,52 +85,103 @@
             measurementId: "G-DLV0MYMSSJ"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
         const backendUrl = 'https://palpiteiro-ia-backend-docker.onrender.com';
 
-        // Monitor auth state
-        try {
-            onAuthStateChanged(auth, (user) => {
-                const loginButton = document.getElementById('loginButton');
-                const userInfo = document.getElementById('userInfo');
-                if (user) {
-                    loginButton.style.display = 'none';
-                    userInfo.textContent = `Bem-vindo, ${user.displayName}!`;
-                    console.log('Usuário autenticado:', user.displayName, 'UID:', user.uid);
-                    carregarTaxasAcerto();
-                } else {
-                    loginButton.style.display = 'block';
-                    userInfo.textContent = '';
-                    document.getElementById('taxas').textContent = 'Faça login para ver as taxas de acerto.';
-                    console.log('Nenhum usuário autenticado.');
-                }
-            });
-        } catch (error) {
-            console.error('Erro no onAuthStateChanged:', error.message);
-            document.getElementById('taxas').textContent = 'Erro ao verificar autenticação: ' + error.message;
-        }
+        // Elementos do DOM
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userName = document.getElementById('user-name');
+        const gerarPalpitesBtn = document.getElementById('gerar-palpites-btn');
+        const palpitesDiv = document.getElementById('palpites');
+        const taxasSection = document.getElementById('taxas-section');
+        const taxasDiv = document.getElementById('taxas');
+        const historicoSpinner = document.getElementById('historico-spinner');
+        const palpitesSpinner = document.getElementById('palpites-spinner');
+        const historicoTable = document.getElementById('historico-table');
 
-        // Login with Google
-        document.getElementById('loginButton').addEventListener('click', async () => {
-            console.log('Iniciando login com Google...');
-            const provider = new GoogleAuthProvider();
-            try {
-                const result = await signInWithPopup(auth, provider);
-                console.log('Login bem-sucedido:', result.user.displayName, 'UID:', result.user.uid);
-            } catch (error) {
-                console.error('Erro no login:', error.message, 'Código:', error.code);
-                document.getElementById('taxas').textContent = `Erro ao fazer login: ${error.message} (Código: ${error.code})`;
+        // Monitorar estado de autenticação
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log('Usuário autenticado:', user.displayName);
+                userName.textContent = `Bem-vindo, ${user.displayName}!`;
+                userName.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                taxasSection.classList.remove('hidden');
+                await carregarTaxasAcerto();
+            } else {
+                console.log('Nenhum usuário autenticado.');
+                userName.textContent = '';
+                userName.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+                taxasSection.classList.add('hidden');
+                taxasDiv.textContent = '';
             }
         });
 
-        // Carregar taxas de acerto
+        // Login com Google
+        loginBtn.addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error('Erro ao fazer login:', error.message);
+                alert('Erro ao fazer login: ' + error.message);
+            }
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log('Usuário deslogado.');
+            } catch (error) {
+                console.error('Erro ao sair:', error.message);
+                alert('Erro ao sair: ' + error.message);
+            }
+        });
+
+        // Gerar Palpites
+        gerarPalpitesBtn.addEventListener('click', async () => {
+            palpitesSpinner.style.display = 'block';
+            palpitesDiv.innerHTML = '';
+            try {
+                console.log('Iniciando requisição para /gerar_palpites...');
+                const response = await fetch(`${backendUrl}/gerar_palpites`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+                const data = await response.json();
+                console.log('Dados de palpites:', data);
+                if (!data.palpites || !Array.isArray(data.palpites)) {
+                    throw new Error('Formato de dados inválido: palpites não encontrado ou não é um array.');
+                }
+                palpitesDiv.innerHTML = data.palpites.map((palpite, index) => `
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <p class="font-semibold">Palpite ${index + 1}:</p>
+                        <p>${palpite.join(', ')}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao gerar palpites:', error.message);
+                palpitesDiv.textContent = 'Erro ao gerar palpites: ' + error.message;
+            } finally {
+                palpitesSpinner.style.display = 'none';
+            }
+        });
+
+        // Carregar Taxas de Acerto
         async function carregarTaxasAcerto() {
             try {
-                const token = await auth.currentUser.getIdToken();
-                console.log('Token obtido, enviando para /taxas_acerto...');
+                console.log('Iniciando requisição para /taxas_acerto...');
+                const user = auth.currentUser;
+                if (!user) throw new Error('Usuário não autenticado.');
+                const token = await user.getIdToken();
                 const response = await fetch(`${backendUrl}/taxas_acerto`, {
                     method: 'GET',
                     headers: {
@@ -111,71 +191,50 @@
                 });
                 console.log('Resposta de /taxas_acerto:', response.status, response.statusText);
                 if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const text = await response.text();
-                const data = JSON.parse(text);
+                const data = await response.json();
                 console.log('Dados de taxas:', data);
-                document.getElementById('taxas').textContent = 
-                    `Taxas de Acerto: 11 números: ${data.taxas?.acertos_11 || 'N/D'}, 12 números: ${data.taxas?.acertos_12 || 'N/D'}`;
+                if (!data.taxas) throw new Error('Formato de dados inválido: taxas não encontrado.');
+                taxasDiv.textContent = `11 números: ${data.taxas.acertos_11}, 12 números: ${data.taxas.acertos_12}`;
             } catch (error) {
                 console.error('Erro ao carregar taxas:', error.message);
-                document.getElementById('taxas').textContent = 'Erro ao carregar taxas de acerto: ' + error.message;
+                taxasDiv.textContent = 'Erro ao carregar taxas: ' + error.message;
             }
         }
 
-        // Gerar palpites
-        document.getElementById('gerarPalpites').addEventListener('click', async () => {
+        // Carregar Histórico
+        async function carregarHistorico() {
+            historicoSpinner.style.display = 'block';
+            historicoTable.innerHTML = '';
             try {
-                console.log('Iniciando requisição para /gerar_palpites...');
-                const response = await fetch(`${backendUrl}/gerar_palpites`, {
+                console.log('Iniciando requisição para /historico...');
+                const response = await fetch(`${backendUrl}/historico`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                console.log('Resposta de /historico:', response.status, response.statusText);
                 if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const text = await response.text();
-                const data = JSON.parse(text);
-                console.log('Dados de palpites:', data);
-                document.getElementById('palpites').innerHTML = data.palpites
-                    ? data.palpites.map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`).join('')
-                    : 'Nenhum palpite disponível.';
+                const data = await response.json();
+                console.log('Dados de histórico:', data);
+                if (!data.sorteios || !Array.isArray(data.sorteios)) {
+                    throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
+                }
+                historicoTable.innerHTML = data.sorteios.map(sorteio => `
+                    <tr>
+                        <td class="p-2">${sorteio.concurso}</td>
+                        <td class="p-2">${sorteio.data}</td>
+                        <td class="p-2">${sorteio.numeros.join(', ')}</td>
+                    </tr>
+                `).join('');
             } catch (error) {
-                console.error('Erro ao gerar palpites:', error.message);
-                document.getElementById('palpites').textContent = 'Erro ao gerar palpites: ' + error.message;
+                console.error('Erro ao carregar histórico:', error.message);
+                historicoTable.innerHTML = `<tr><td colspan="3" class="p-2 text-red-500">Erro ao carregar histórico: ${error.message}</td></tr>`;
+            } finally {
+                historicoSpinner.style.display = 'none';
             }
-        });
-
-        // Carregar histórico
-        async function carregarHistorico() {
-    try {
-        console.log('Iniciando requisição para /historico...');
-        const response = await fetch(`${backendUrl}/historico`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('Resposta de /historico:', response.status, response.statusText);
-        if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-        const text = await response.text();
-        const data = JSON.parse(text);
-        console.log('Dados de histórico:', data);
-        if (!data.sorteios || !Array.isArray(data.sorteios)) {
-            throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
         }
-        document.getElementById('historico').innerHTML = data.sorteios
-            .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
-            .join('');
-    } catch (error) {
-        console.error('Erro ao carregar histórico:', error.message);
-        document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
-    }
-}
 
         // Carregar histórico ao iniciar
-        try {
-            carregarHistorico();
-        } catch (error) {
-            console.error('Erro ao carregar histórico inicial:', error.message);
-            document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
-        }
+        carregarHistorico();
     </script>
 </body>
 </html>
