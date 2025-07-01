@@ -1,127 +1,123 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Palpiteiro IA - Lotofácil</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f8f9fa; }
-    .palpite-box { background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .numero { display: inline-block; width: 40px; height: 40px; line-height: 40px; text-align: center; background-color: #007bff; color: white; border-radius: 50%; margin: 5px; }
-    .premium-btn { background-color: #ffcc00; border: none; }
-    .premium-btn:hover { background-color: #e6b800; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palpiteiro IA - Lotofácil</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .palpite { margin: 10px; padding: 10px; border: 1px solid #ccc; }
+        .premium { background-color: #ffd700; padding: 10px; }
+        #login { margin: 20px; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
 </head>
 <body>
-  <div class="container mt-5">
-    <h1 class="text-center mb-4">Palpiteiro IA - Ganhe na Lotofácil!</h1>
-    
-    <!-- Gerador de Palpites -->
-    <div class="palpite-box mb-4">
-      <h3>Gerar Palpites</h3>
-      <button class="btn btn-primary mb-3" onclick="gerarPalpites('free')">Gerar Palpites Grátis</button>
-      <button class="btn premium-btn mb-3" onclick="gerarPalpites('grok')">Modo Grok (Premium)</button>
-      <div id="palpites" class="mt-3"></div>
+    <h1>Palpiteiro IA - Lotofácil</h1>
+    <div id="login">
+        <button id="loginButton">Entrar com Google</button>
+        <p id="userInfo"></p>
     </div>
+    <button onclick="gerarPalpites()">Gerar Palpites Grátis</button>
+    <button onclick="alert('Modo Grok (Premium) estará disponível em breve!')" class="premium">Modo Grok (Premium)</button>
+    <div id="palpites"></div>
+    <h2>Histórico de Sorteios</h2>
+    <div id="historico"></div>
+    <h2>Taxas de Acerto (após login)</h2>
+    <div id="taxas"></div>
 
-    <!-- Histórico de Sorteios -->
-    <div class="palpite-box">
-      <h3>Últimos Sorteios</h3>
-      <table class="table table-striped" id="historico">
-        <thead>
-          <tr>
-            <th>Concurso</th>
-            <th>Data</th>
-            <th>Números</th>
-          </tr>
-        </thead>
-        <tbody id="historico-body"></tbody>
-      </table>
-    </div>
+    <script>
+        // Configurar Firebase
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJETO",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SUA_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
 
-    <!-- Assinatura Premium -->
-    <div class="text-center mt-4">
-      <a href="https://www.pagseguro.com.br" target="_blank" class="btn premium-btn">Assine Premium por R$ 19,90/mês</a>
-    </div>
-  </div>
+        const auth = firebase.auth();
+        const loginButton = document.getElementById('loginButton');
+        const userInfo = document.getElementById('userInfo');
 
-  <script>
-    async function gerarPalpites(modo) {
-      if (modo === 'grok') {
-        alert('Assine o plano Premium para usar o Modo Grok!');
-        return;
-      }
-      try {
-        const response = await fetch('https://palpiteiro-ia-backend-docker.onrender.com/gerar_palpites');
-        const data = await response.json();
-        const palpitesDiv = document.getElementById('palpites');
-        palpitesDiv.innerHTML = '<h4>Seus Palpites:</h4>';
-        data.palpites.forEach((palpite, index) => {
-          const palpiteHtml = `<p>Aposta ${index + 1}: ${palpite.map(n => `<span class="numero">${n.toString().padStart(2, '0')}</span>`).join('')}</p>`;
-          palpitesDiv.innerHTML += palpiteHtml;
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginButton.style.display = 'none';
+                userInfo.textContent = `Bem-vindo, ${user.displayName}!`;
+                carregarTaxasAcerto();
+            } else {
+                loginButton.style.display = 'block';
+                userInfo.textContent = '';
+                document.getElementById('taxas').textContent = 'Faça login para ver as taxas de acerto.';
+            }
         });
-      } catch (error) {
-        document.getElementById('palpites').innerHTML = '<p class="text-danger">Erro ao gerar palpites. Tente novamente!</p>';
-      }
-    }
 
-    async function carregarHistorico() {
-      try {
-        const response = await fetch('https://palpiteiro-ia-backend-docker.onrender.com/historico');
-        const data = await response.json();
-        const tbody = document.getElementById('historico-body');
-        tbody.innerHTML = '';
-        data.sorteios.slice(0, 5).forEach(sorteio => {
-          const row = `<tr><td>${sorteio.concurso}</td><td>${sorteio.data}</td><td>${sorteio.numeros.join(', ')}</td></tr>`;
-          tbody.innerHTML += row;
+        loginButton.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
         });
-      } catch (error) {
-        console.error('Erro ao carregar histórico:', error);
-      }
-    }
 
-    window.onload = carregarHistorico;
-  </script>
+        async function gerarPalpites() {
+            try {
+                const response = await fetch('https://palpiteiro-ia-backend-docker.onrender.com/gerar_palpites');
+                const data = await response.json();
+                const palpitesDiv = document.getElementById('palpites');
+                palpitesDiv.innerHTML = '';
+                data.palpites.forEach((palpite, index) => {
+                    const p = document.createElement('div');
+                    p.className = 'palpite';
+                    p.textContent = `Aposta ${index + 1}: ${palpite.join(', ')}`;
+                    palpitesDiv.appendChild(p);
+                });
+            } catch (error) {
+                console.error('Erro ao gerar palpites:', error);
+                document.getElementById('palpites').textContent = 'Erro ao gerar palpites.';
+            }
+        }
+
+        async function carregarHistorico() {
+            try {
+                const response = await fetch('https://palpiteiro-ia-backend-docker.onrender.com/historico');
+                const data = await response.json();
+                const historicoDiv = document.getElementById('historico');
+                historicoDiv.innerHTML = '';
+                data.sorteios.forEach(sorteio => {
+                    const p = document.createElement('div');
+                    p.textContent = `Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}`;
+                    historicoDiv.appendChild(p);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar histórico:', error);
+                document.getElementById('historico').textContent = 'Erro ao carregar histórico.';
+            }
+        }
+
+        async function carregarTaxasAcerto() {
+            try {
+                const user = auth.currentUser;
+                if (!user) throw new Error('Usuário não logado');
+                const token = await user.getIdToken();
+                const response = await fetch('https://palpiteiro-ia-backend-docker.onrender.com/taxas_acerto', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.erro) throw new Error(data.erro);
+                const taxasDiv = document.getElementById('taxas');
+                taxasDiv.innerHTML = `Bem-vindo, ${data.user_name}! Taxas de Acerto:<br>11 números: ${data.taxas.acertos_11}<br>12 números: ${data.taxas.acertos_12}`;
+            } catch (error) {
+                console.error('Erro ao carregar taxas:', error);
+                document.getElementById('taxas').textContent = 'Erro ao carregar taxas de acerto.';
+            }
+        }
+
+        // Carregar histórico ao iniciar
+        carregarHistorico();
+    </script>
+</body>
+</html>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
