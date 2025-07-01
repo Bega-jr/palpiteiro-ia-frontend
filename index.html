@@ -39,9 +39,9 @@
     <div id="taxas">Faça login para ver as taxas de acerto.</div>
     <div id="historico"></div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+    <!-- Firebase SDK (Compatibilidade) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <script>
         // Configuração do Firebase
@@ -66,8 +66,7 @@
             console.log('Firebase inicializado com sucesso.');
         } catch (error) {
             console.error('Erro ao inicializar Firebase:', error.message);
-            document.getElementById('taxes').textContent = 'Erro ao carregar o Firebase: ' + error.message;
-            return;
+            document.getElementById('taxas').textContent = 'Erro ao carregar o Firebase: ' + error.message;
         }
 
         const backendUrl = 'https://palpiteiro-ia-backend-docker.onrender.com';
@@ -128,7 +127,7 @@
                         })
                         .then(data => {
                             document.getElementById('taxas').textContent = 
-                                `Taxas de Acerto: 11 números: ${data.taxas.acertos_11}, 12 números: ${data.taxas.acertos_12}`;
+                                `Taxas de Acerto: 11 números: ${data.taxas.acertos_11 || 'N/D'}, 12 números: ${data.taxas.acertos_12 || 'N/D'}`;
                         })
                         .catch(error => {
                             console.error('Erro ao carregar taxas:', error.message);
