@@ -146,28 +146,28 @@
 
         // Carregar histórico
         async function carregarHistorico() {
-            try {
-                console.log('Iniciando requisição para /historico...');
-                const response = await fetch(`${backendUrl}/historico`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                console.log('Resposta de /historico:', response.status, response.statusText);
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const text = await response.text();
-                const data = JSON.parse(text);
-                console.log('Dados de histórico:', data);
-                if (!data.sorteios || !Array.isArray(data.sorteios)) {
-                    throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
-                }
-                document.getElementById('historico').innerHTML = data.sorteios
-                    .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
-                    .join('');
-            } catch (error) {
-                console.error('Erro ao carregar histórico:', error.message);
-                document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
-            }
+    try {
+        console.log('Iniciando requisição para /historico...');
+        const response = await fetch(`${backendUrl}/historico`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        console.log('Resposta de /historico:', response.status, response.statusText);
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+        const text = await response.text();
+        const data = JSON.parse(text);
+        console.log('Dados de histórico:', data);
+        if (!data.sorteios || !Array.isArray(data.sorteios)) {
+            throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
         }
+        document.getElementById('historico').innerHTML = data.sorteios
+            .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
+            .join('');
+    } catch (error) {
+        console.error('Erro ao carregar histórico:', error.message);
+        document.getElementById('historico').textContent = 'Erro ao carregar histórico: ' + error.message;
+    }
+}
 
         // Carregar histórico ao iniciar
         try {
