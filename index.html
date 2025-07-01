@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -95,7 +56,12 @@
         };
 
         // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.error('Erro ao inicializar Firebase:', error);
+            document.getElementById('taxas').textContent = 'Erro ao carregar o Firebase.';
+        }
         const auth = firebase.auth();
         const backendUrl = 'https://palpiteiro-ia-backend-docker.onrender.com';
 
@@ -103,14 +69,19 @@
         auth.onAuthStateChanged(user => {
             const loginButton = document.getElementById('loginButton');
             const userInfo = document.getElementById('userInfo');
-            if (user) {
-                loginButton.style.display = 'none';
-                userInfo.textContent = `Bem-vindo, ${user.displayName}!`;
-                carregarTaxasAcerto();
-            } else {
-                loginButton.style.display = 'block';
-                userInfo.textContent = '';
-                document.getElementById('taxas').textContent = 'Faça login para ver as taxas de acerto.';
+            try {
+                if (user) {
+                    loginButton.style.display = 'none';
+                    userInfo.textContent = `Bem-vindo, ${user.displayName}!`;
+                    carregarTaxasAcerto();
+                } else {
+                    loginButton.style.display = 'block';
+                    userInfo.textContent = '';
+                    document.getElementById('taxas').textContent = 'Faça login para ver as taxas de acerto.';
+                }
+            } catch (error) {
+                console.error('Erro no onAuthStateChanged:', error);
+                document.getElementById('taxas').textContent = 'Erro ao verificar autenticação.';
             }
         });
 
@@ -119,8 +90,8 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider)
                 .then(result => {
-                    // Login bem-sucedido, carregar taxas
-                    carregarTaxasAcerto();
+                    // Login bem-sucedido
+                    console.log('Login bem-sucedido:', result.user.displayName);
                 })
                 .catch(error => {
                     console.error('Erro no login:', error);
@@ -140,7 +111,7 @@
                         }
                     })
                     .then(response => {
-                        if (!response.ok) throw new Error('Erro na resposta: ' + response.status);
+                        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
                         return response.json();
                     })
                     .then(data => {
@@ -154,6 +125,7 @@
                 })
                 .catch(error => {
                     console.error('Erro ao obter token:', error);
+                    document.getElementById('taxas').textContent = 'Erro ao obter token de autenticação.';
                 });
         }
 
@@ -164,7 +136,7 @@
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => {
-                if (!response.ok) throw new Error('Erro na resposta: ' + response.status);
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
                 return response.json();
             })
             .then(data => {
@@ -185,7 +157,7 @@
                 headers: { 'Content-Type': 'application/json' }
             })
             .then(response => {
-                if (!response.ok) throw new Error('Erro na resposta: ' + response.status);
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
                 return response.json();
             })
             .then(data => {
@@ -200,7 +172,12 @@
         }
 
         // Carregar histórico ao iniciar
-        carregarHistorico();
+        try {
+            carregarHistorico();
+        } catch (error) {
+            console.error('Erro ao carregar histórico inicial:', error);
+            document.getElementById('historico').textContent = 'Erro ao carregar histórico.';
+        }
     </script>
 </body>
 </html>
