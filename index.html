@@ -122,10 +122,12 @@
                             }
                         })
                         .then(response => {
-                            if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                            console.log('Resposta de /taxas_acerto:', response.status, response.statusText);
+                            if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                             return response.json();
                         })
                         .then(data => {
+                            console.log('Dados de taxas:', data);
                             document.getElementById('taxas').textContent = 
                                 `Taxas de Acerto: 11 números: ${data.taxas?.acertos_11 || 'N/D'}, 12 números: ${data.taxas?.acertos_12 || 'N/D'}`;
                         })
@@ -147,15 +149,18 @@
         // Gerar palpites
         document.getElementById('gerarPalpites').addEventListener('click', () => {
             try {
+                console.log('Iniciando requisição para /gerar_palpites...');
                 fetch(`${backendUrl}/gerar_palpites`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 })
                 .then(response => {
-                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                    console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Dados de palpites:', data);
                     document.getElementById('palpites').innerHTML = data.palpites
                         ? data.palpites.map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`).join('')
                         : 'Nenhum palpite disponível.';
@@ -179,12 +184,18 @@
                     headers: { 'Content-Type': 'application/json' }
                 })
                 .then(response => {
-                    console.log('Resposta recebida:', response.status, response.statusText);
+                    console.log('Resposta de /historico:', response.status, response.statusText);
                     if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                    return response.json();
+                    return response.text().then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            throw new Error(`Formato JSON inválido: ${e.message}`);
+                        }
+                    });
                 })
                 .then(data => {
-                    console.log('Dados recebidos:', data);
+                    console.log('Dados de histórico:', data);
                     if (!data.sorteios || !Array.isArray(data.sorteios)) {
                         throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
                     }
