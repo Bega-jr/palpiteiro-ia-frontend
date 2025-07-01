@@ -127,7 +127,7 @@
                         })
                         .then(data => {
                             document.getElementById('taxas').textContent = 
-                                `Taxas de Acerto: 11 números: ${data.taxas.acertos_11 || 'N/D'}, 12 números: ${data.taxas.acertos_12 || 'N/D'}`;
+                                `Taxas de Acerto: 11 números: ${data.taxas?.acertos_11 || 'N/D'}, 12 números: ${data.taxas?.acertos_12 || 'N/D'}`;
                         })
                         .catch(error => {
                             console.error('Erro ao carregar taxas:', error.message);
@@ -157,8 +157,8 @@
                 })
                 .then(data => {
                     document.getElementById('palpites').innerHTML = data.palpites
-                        .map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`)
-                        .join('');
+                        ? data.palpites.map(palpite => `<p>Palpite: ${palpite.join(', ')}</p>`).join('')
+                        : 'Nenhum palpite disponível.';
                 })
                 .catch(error => {
                     console.error('Erro ao gerar palpites:', error.message);
@@ -173,15 +173,21 @@
         // Carregar histórico
         function carregarHistorico() {
             try {
+                console.log('Iniciando requisição para /historico...');
                 fetch(`${backendUrl}/historico`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 })
                 .then(response => {
-                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+                    console.log('Resposta recebida:', response.status, response.statusText);
+                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Dados recebidos:', data);
+                    if (!data.sorteios || !Array.isArray(data.sorteios)) {
+                        throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
+                    }
                     document.getElementById('historico').innerHTML = data.sorteios
                         .map(sorteio => `<p>Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(', ')}</p>`)
                         .join('');
