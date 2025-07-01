@@ -124,7 +124,13 @@
                         .then(response => {
                             console.log('Resposta de /taxas_acerto:', response.status, response.statusText);
                             if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                            return response.json();
+                            return response.text().then(text => {
+                                try {
+                                    return JSON.parse(text);
+                                } catch (e) {
+                                    throw new Error(`Formato JSON inválido: ${e.message}`);
+                                }
+                            });
                         })
                         .then(data => {
                             console.log('Dados de taxas:', data);
@@ -157,7 +163,13 @@
                 .then(response => {
                     console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
                     if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                    return response.json();
+                    return response.text().then(text => {
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            throw new Error(`Formato JSON inválido: ${e.message}`);
+                        }
+                    });
                 })
                 .then(data => {
                     console.log('Dados de palpites:', data);
