@@ -18,6 +18,21 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        .volante-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e5e7eb;
+            border-radius: 50%;
+            margin: 2px;
+        }
+        .volante-number.sorteado {
+            background-color: #1d4ed8;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -35,37 +50,40 @@
 
     <!-- Conteúdo Principal -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Seção de Palpites -->
+        <!-- Seção de Palpite da Semana -->
         <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4">Gerar Palpites</h2>
-            <button id="gerar-palpites-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 flex items-center">
-                <span>Gerar Palpites Grátis</span>
-                <div id="palpites-spinner" class="spinner ml-2"></div>
-            </button>
-            <div id="palpites" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <h2 class="text-xl font-semibold mb-4">Palpite da Semana</h2>
+            <div id="palpites" class="bg-white p-4 rounded-lg shadow"></div>
+            <div id="palpite-dia-section" class="mt-4 hidden">
+                <button id="gerar-palpite-dia-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 flex items-center">
+                    <span>Gerar Palpite do Dia</span>
+                    <div id="palpite-dia-spinner" class="spinner ml-2"></div>
+                </button>
+                <div id="palpite-dia" class="mt-4 bg-white p-4 rounded-lg shadow"></div>
+            </div>
         </section>
 
         <!-- Seção de Taxas de Acerto -->
-        <section class="mb-8 hidden" id="taxas-section">
+        <section class="mb-8">
             <h2 class="text-xl font-semibold mb-4">Taxas de Acerto</h2>
             <div id="taxas" class="bg-white p-4 rounded-lg shadow"></div>
         </section>
 
-        <!-- Seção de Histórico -->
-        <section>
-            <h2 class="text-xl font-semibold mb-4">Histórico de Sorteios</h2>
+        <!-- Seção de Último Resultado -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Último Resultado</h2>
             <div id="historico-spinner" class="spinner mx-auto"></div>
-            <div id="historico" class="bg-white p-4 rounded-lg shadow overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="p-2">Concurso</th>
-                            <th class="p-2">Data</th>
-                            <th class="p-2">Números</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historico-table"></tbody>
-                </table>
+            <div id="ultimo-resultado" class="bg-white p-4 rounded-lg shadow">
+                <p id="resultado-crescente" class="mb-2"></p>
+                <p id="resultado-sorteio"></p>
+            </div>
+        </section>
+
+        <!-- Seção de Volante -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4">Volante do Último Sorteio</h2>
+            <div id="volante" class="bg-white p-4 rounded-lg shadow flex justify-center">
+                <div id="volante-table" class="grid grid-cols-5 gap-2"></div>
             </div>
         </section>
     </main>
@@ -94,13 +112,16 @@
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const userName = document.getElementById('user-name');
-        const gerarPalpitesBtn = document.getElementById('gerar-palpites-btn');
         const palpitesDiv = document.getElementById('palpites');
-        const taxasSection = document.getElementById('taxas-section');
+        const palpiteDiaSection = document.getElementById('palpite-dia-section');
+        const gerarPalpiteDiaBtn = document.getElementById('gerar-palpite-dia-btn');
+        const palpiteDiaDiv = document.getElementById('palpite-dia');
+        const palpiteDiaSpinner = document.getElementById('palpite-dia-spinner');
         const taxasDiv = document.getElementById('taxas');
         const historicoSpinner = document.getElementById('historico-spinner');
-        const palpitesSpinner = document.getElementById('palpites-spinner');
-        const historicoTable = document.getElementById('historico-table');
+        const resultadoCrescente = document.getElementById('resultado-crescente');
+        const resultadoSorteio = document.getElementById('resultado-sorteio');
+        const volanteTable = document.getElementById('volante-table');
 
         // Monitorar estado de autenticação
         onAuthStateChanged(auth, async (user) => {
@@ -110,17 +131,19 @@
                 userName.classList.remove('hidden');
                 loginBtn.classList.add('hidden');
                 logoutBtn.classList.remove('hidden');
-                taxasSection.classList.remove('hidden');
-                await carregarTaxasAcerto();
+                palpiteDiaSection.classList.remove('hidden');
+                await verificarPalpiteDia();
             } else {
                 console.log('Nenhum usuário autenticado.');
                 userName.textContent = '';
                 userName.classList.add('hidden');
                 loginBtn.classList.remove('hidden');
                 logoutBtn.classList.add('hidden');
-                taxasSection.classList.add('hidden');
-                taxasDiv.textContent = '';
+                palpiteDiaSection.classList.add('hidden');
+                palpiteDiaDiv.textContent = '';
             }
+            await carregarPalpiteSemana();
+            await carregarTaxasAcerto();
         });
 
         // Login com Google
@@ -144,12 +167,41 @@
             }
         });
 
-        // Gerar Palpites
-        gerarPalpitesBtn.addEventListener('click', async () => {
-            palpitesSpinner.style.display = 'block';
-            palpitesDiv.innerHTML = '';
+        // Verificar se é domingo para gerar novo palpite semanal
+        function isSunday() {
+            const today = new Date();
+            return today.getDay() === 0; // 0 = Domingo
+        }
+
+        // Verificar se o palpite da semana é válido
+        function isPalpiteSemanaValid() {
+            const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana') || '{}');
+            if (!palpiteData.numeros || !palpiteData.timestamp) return false;
+            const lastGenerated = new Date(palpiteData.timestamp);
+            const now = new Date();
+            const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1 semana em milissegundos
+            return (now - lastGenerated) < oneWeek && lastGenerated.getDay() === 0;
+        }
+
+        // Verificar se o palpite do dia é válido
+        function isPalpiteDiaValid() {
+            const palpiteData = JSON.parse(localStorage.getItem('palpiteDia') || '{}');
+            if (!palpiteData.numeros || !palpiteData.timestamp) return false;
+            const lastGenerated = new Date(palpiteData.timestamp);
+            const now = new Date();
+            const oneDay = 24 * 60 * 60 * 1000; // 1 dia em milissegundos
+            return now.toDateString() === lastGenerated.toDateString();
+        }
+
+        // Carregar Palpite da Semana
+        async function carregarPalpiteSemana() {
+            if (!isSunday() && isPalpiteSemanaValid()) {
+                const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana'));
+                palpitesDiv.innerHTML = `<p class="font-semibold">Palpite da Semana:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+                return;
+            }
             try {
-                console.log('Iniciando requisição para /gerar_palpites...');
+                console.log('Iniciando requisição para /gerar_palpites (semana)...');
                 const response = await fetch(`${backendUrl}/gerar_palpites`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
@@ -158,36 +210,73 @@
                 if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                 const data = await response.json();
                 console.log('Dados de palpites:', data);
-                if (!data.palpites || !Array.isArray(data.palpites)) {
-                    throw new Error('Formato de dados inválido: palpites não encontrado ou não é um array.');
+                if (!data.palpite || !Array.isArray(data.palpite)) {
+                    throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
                 }
-                palpitesDiv.innerHTML = data.palpites.map((palpite, index) => `
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <p class="font-semibold">Palpite ${index + 1}:</p>
-                        <p>${palpite.join(', ')}</p>
-                    </div>
-                `).join('');
+                localStorage.setItem('palpiteSemana', JSON.stringify({
+                    numeros: data.palpite,
+                    timestamp: new Date().toISOString()
+                }));
+                palpitesDiv.innerHTML = `<p class="font-semibold">Palpite da Semana:</p><p>${data.palpite.join(', ')}</p>`;
             } catch (error) {
-                console.error('Erro ao gerar palpites:', error.message);
-                palpitesDiv.textContent = 'Erro ao gerar palpites: ' + error.message;
+                console.error('Erro ao gerar palpite da semana:', error.message);
+                palpitesDiv.textContent = 'Erro ao gerar palpite da semana: ' + error.message;
+            }
+        }
+
+        // Gerar Palpite do Dia
+        gerarPalpiteDiaBtn.addEventListener('click', async () => {
+            if (isPalpiteDiaValid()) {
+                const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
+                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+                return;
+            }
+            palpiteDiaSpinner.style.display = 'block';
+            palpiteDiaDiv.innerHTML = '';
+            try {
+                console.log('Iniciando requisição para /gerar_palpites (dia)...');
+                const response = await fetch(`${backendUrl}/gerar_palpites`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+                const data = await response.json();
+                console.log('Dados de palpites:', data);
+                if (!data.palpite || !Array.isArray(data.palpite)) {
+                    throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
+                }
+                localStorage.setItem('palpiteDia', JSON.stringify({
+                    numeros: data.palpite,
+                    timestamp: new Date().toISOString()
+                }));
+                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${data.palpite.join(', ')}</p>`;
+            } catch (error) {
+                console.error('Erro ao gerar palpite do dia:', error.message);
+                palpiteDiaDiv.textContent = 'Erro ao gerar palpite do dia: ' + error.message;
             } finally {
-                palpitesSpinner.style.display = 'none';
+                palpiteDiaSpinner.style.display = 'none';
             }
         });
 
+        // Verificar Palpite do Dia
+        async function verificarPalpiteDia() {
+            if (isPalpiteDiaValid()) {
+                const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
+                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+            } else {
+                palpiteDiaDiv.innerHTML = '';
+            }
+        }
+
         // Carregar Taxas de Acerto
         async function carregarTaxasAcerto() {
+            taxasDiv.textContent = '';
             try {
                 console.log('Iniciando requisição para /taxas_acerto...');
-                const user = auth.currentUser;
-                if (!user) throw new Error('Usuário não autenticado.');
-                const token = await user.getIdToken();
                 const response = await fetch(`${backendUrl}/taxas_acerto`, {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 console.log('Resposta de /taxas_acerto:', response.status, response.statusText);
                 if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
@@ -201,10 +290,12 @@
             }
         }
 
-        // Carregar Histórico
+        // Carregar Último Resultado e Volante
         async function carregarHistorico() {
             historicoSpinner.style.display = 'block';
-            historicoTable.innerHTML = '';
+            resultadoCrescente.textContent = '';
+            resultadoSorteio.textContent = '';
+            volanteTable.innerHTML = '';
             try {
                 console.log('Iniciando requisição para /historico...');
                 const response = await fetch(`${backendUrl}/historico`, {
@@ -218,23 +309,30 @@
                 if (!data.sorteios || !Array.isArray(data.sorteios)) {
                     throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
                 }
-                historicoTable.innerHTML = data.sorteios.map(sorteio => `
-                    <tr>
-                        <td class="p-2">${sorteio.concurso}</td>
-                        <td class="p-2">${sorteio.data}</td>
-                        <td class="p-2">${sorteio.numeros.join(', ')}</td>
-                    </tr>
-                `).join('');
+                const ultimoSorteio = data.sorteios[data.sorteios.length - 1];
+                resultadoCrescente.textContent = `Concurso ${ultimoSorteio.concurso} (${ultimoSorteio.data}) - Ordem Crescente: ${ultimoSorteio.numeros.sort((a, b) => a - b).join(', ')}`;
+                resultadoSorteio.textContent = `Ordem de Sorteio: ${ultimoSorteio.numeros.join(', ')}`;
+
+                // Gerar volante
+                const numerosSorteados = ultimoSorteio.numeros;
+                let volanteHTML = '';
+                for (let i = 1; i <= 25; i++) {
+                    const isSorteado = numerosSorteados.includes(i);
+                    volanteHTML += `<div class="volante-number ${isSorteado ? 'sorteado' : ''}">${i}</div>`;
+                }
+                volanteTable.innerHTML = volanteHTML;
             } catch (error) {
                 console.error('Erro ao carregar histórico:', error.message);
-                historicoTable.innerHTML = `<tr><td colspan="3" class="p-2 text-red-500">Erro ao carregar histórico: ${error.message}</td></tr>`;
+                resultadoCrescente.textContent = 'Erro ao carregar resultado: ' + error.message;
             } finally {
                 historicoSpinner.style.display = 'none';
             }
         }
 
-        // Carregar histórico ao iniciar
+        // Carregar histórico e palpite ao iniciar
         carregarHistorico();
+        carregarPalpiteSemana();
+        carregarTaxasAcerto();
     </script>
 </body>
 </html>
