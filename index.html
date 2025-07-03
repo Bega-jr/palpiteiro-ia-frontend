@@ -71,7 +71,7 @@
 
         <!-- Seção de Último Resultado -->
         <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4">Último Resultado</h2>
+            <h2 class="text-xl font-semibold mb-4" id="ultimo-resultado-titulo"></h2>
             <div id="historico-spinner" class="spinner mx-auto"></div>
             <div id="ultimo-resultado" class="bg-white p-4 rounded-lg shadow">
                 <p id="resultado-crescente" class="mb-2"></p>
@@ -122,6 +122,7 @@
         const resultadoCrescente = document.getElementById('resultado-crescente');
         const resultadoSorteio = document.getElementById('resultado-sorteio');
         const volanteTable = document.getElementById('volante-table');
+        const ultimoResultadoTitulo = document.getElementById('ultimo-resultado-titulo');
 
         // Monitorar estado de autenticação
         onAuthStateChanged(auth, async (user) => {
@@ -197,30 +198,38 @@
         async function carregarPalpiteSemana() {
             if (!isSunday() && isPalpiteSemanaValid()) {
                 const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana'));
-                palpitesDiv.innerHTML = `<p class="font-semibold">Palpite da Semana:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+                palpitesDiv.textContent = palpiteData.numeros.join(', ');
                 return;
             }
-            try {
-                console.log('Iniciando requisição para /gerar_palpites (semana)...');
-                const response = await fetch(`${backendUrl}/gerar_palpites`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const data = await response.json();
-                console.log('Dados de palpites:', data);
-                if (!data.palpite || !Array.isArray(data.palpite)) {
-                    throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
+            if (isSunday() || !isPalpiteSemanaValid()) {
+                try {
+                    console.log('Iniciando requisição para /gerar_palpites (semana)...');
+                    const response = await fetch(`${backendUrl}/gerar_palpites`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
+                    const data = await response.json();
+                    console.log('Dados de palpites:', data);
+                    if (!data.palpite || !Array.isArray(data.palpite)) {
+                        throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
+                    }
+                    localStorage.setItem('palpiteSemana', JSON.stringify({
+                        numeros: data.palpite,
+                        timestamp: new Date().toISOString()
+                    }));
+                    palpitesDiv.textContent = data.palpite.join(', ');
+                } catch (error) {
+                    console.error('Erro ao gerar palpite da semana:', error.message);
+                    palpitesDiv.textContent = 'Erro ao carregar palpite da semana: ' + error.message;
+                    const fallbackPalpite = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1).sort((a, b) => a - b);
+                    localStorage.setItem('palpiteSemana', JSON.stringify({
+                        numeros: fallbackPalpite,
+                        timestamp: new Date().toISOString()
+                    }));
+                    palpitesDiv.textContent = fallbackPalpite.join(', ');
                 }
-                localStorage.setItem('palpiteSemana', JSON.stringify({
-                    numeros: data.palpite,
-                    timestamp: new Date().toISOString()
-                }));
-                palpitesDiv.innerHTML = `<p class="font-semibold">Palpite da Semana:</p><p>${data.palpite.join(', ')}</p>`;
-            } catch (error) {
-                console.error('Erro ao gerar palpite da semana:', error.message);
-                palpitesDiv.textContent = 'Erro ao gerar palpite da semana: ' + error.message;
             }
         }
 
@@ -228,11 +237,11 @@
         gerarPalpiteDiaBtn.addEventListener('click', async () => {
             if (isPalpiteDiaValid()) {
                 const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
-                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+                palpiteDiaDiv.textContent = palpiteData.numeros.join(', ');
                 return;
             }
             palpiteDiaSpinner.style.display = 'block';
-            palpiteDiaDiv.innerHTML = '';
+            palpiteDiaDiv.textContent = '';
             try {
                 console.log('Iniciando requisição para /gerar_palpites (dia)...');
                 const response = await fetch(`${backendUrl}/gerar_palpites`, {
@@ -250,7 +259,7 @@
                     numeros: data.palpite,
                     timestamp: new Date().toISOString()
                 }));
-                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${data.palpite.join(', ')}</p>`;
+                palpiteDiaDiv.textContent = data.palpite.join(', ');
             } catch (error) {
                 console.error('Erro ao gerar palpite do dia:', error.message);
                 palpiteDiaDiv.textContent = 'Erro ao gerar palpite do dia: ' + error.message;
@@ -263,9 +272,9 @@
         async function verificarPalpiteDia() {
             if (isPalpiteDiaValid()) {
                 const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
-                palpiteDiaDiv.innerHTML = `<p class="font-semibold">Palpite do Dia:</p><p>${palpiteData.numeros.join(', ')}</p>`;
+                palpiteDiaDiv.textContent = palpiteData.numeros.join(', ');
             } else {
-                palpiteDiaDiv.innerHTML = '';
+                palpiteDiaDiv.textContent = '';
             }
         }
 
@@ -310,7 +319,8 @@
                     throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
                 }
                 const ultimoSorteio = data.sorteios[data.sorteios.length - 1];
-                resultadoCrescente.textContent = `Concurso ${ultimoSorteio.concurso} (${ultimoSorteio.data}) - Ordem Crescente: ${ultimoSorteio.numeros.sort((a, b) => a - b).join(', ')}`;
+                ultimoResultadoTitulo.textContent = `Último Resultado: ${ultimoSorteio.concurso}`;
+                resultadoCrescente.textContent = `Ordem Crescente: ${ultimoSorteio.numeros.sort((a, b) => a - b).join(', ')}`;
                 resultadoSorteio.textContent = `Ordem de Sorteio: ${ultimoSorteio.numeros.join(', ')}`;
 
                 // Gerar volante
