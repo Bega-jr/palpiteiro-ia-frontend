@@ -65,7 +65,7 @@
 
         <!-- Seção de Taxas de Acerto -->
         <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4">Taxas de Acerto</h2>
+            <h2 class="text-xl font-semibold mb-4">Taxas de Acerto da Semana Passada</h2>
             <div id="taxas" class="bg-white p-4 rounded-lg shadow"></div>
         </section>
 
@@ -194,7 +194,7 @@
             return now.toDateString() === lastGenerated.toDateString();
         }
 
-        // Carregar Palpite da Semana
+        // Carregar Palpite da Semana (15 mais sorteados da semana anterior)
         async function carregarPalpiteSemana() {
             if (!isSunday() && isPalpiteSemanaValid()) {
                 const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana'));
@@ -203,23 +203,34 @@
             }
             if (isSunday() || !isPalpiteSemanaValid()) {
                 try {
-                    console.log('Iniciando requisição para /gerar_palpites (semana)...');
-                    const response = await fetch(`${backendUrl}/gerar_palpites`, {
+                    console.log('Iniciando requisição para /historico (semana)...');
+                    const response = await fetch(`${backendUrl}/historico`, {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' }
                     });
-                    console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
+                    console.log('Resposta de /historico:', response.status, response.statusText);
                     if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                     const data = await response.json();
-                    console.log('Dados de palpites:', data);
-                    if (!data.palpite || !Array.isArray(data.palpite)) {
-                        throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
+                    console.log('Dados de histórico:', data);
+                    if (!data.sorteios || !Array.isArray(data.sorteios)) {
+                        throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
                     }
+                    const now = new Date();
+                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    const lastWeekSorteios = data.sorteios.filter(s => {
+                        const sorteioDate = new Date(s.data);
+                        return sorteioDate >= oneWeekAgo && sorteioDate < now;
+                    });
+                    const allNumbers = lastWeekSorteios.flatMap(s => s.numeros);
+                    const frequency = {};
+                    allNumbers.forEach(num => frequency[num] = (frequency[num] || 0) + 1);
+                    const sortedNumbers = Object.keys(frequency).sort((a, b) => frequency[b] - frequency[a]);
+                    const top15 = sortedNumbers.slice(0, 15).map(Number);
                     localStorage.setItem('palpiteSemana', JSON.stringify({
-                        numeros: data.palpite,
+                        numeros: top15,
                         timestamp: new Date().toISOString()
                     }));
-                    palpitesDiv.textContent = data.palpite.join(', ');
+                    palpitesDiv.textContent = top15.join(', ');
                 } catch (error) {
                     console.error('Erro ao gerar palpite da semana:', error.message);
                     palpitesDiv.textContent = 'Erro ao carregar palpite da semana: ' + error.message;
@@ -278,21 +289,43 @@
             }
         }
 
-        // Carregar Taxas de Acerto
+        // Carregar Taxas de Acerto da Semana Passada
         async function carregarTaxasAcerto() {
             taxasDiv.textContent = '';
             try {
-                console.log('Iniciando requisição para /taxas_acerto...');
-                const response = await fetch(`${backendUrl}/taxas_acerto`, {
+                console.log('Iniciando requisição para /historico (taxas)...');
+                const response = await fetch(`${backendUrl}/historico`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                console.log('Resposta de /taxas_acerto:', response.status, response.statusText);
+                console.log('Resposta de /historico:', response.status, response.statusText);
                 if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
                 const data = await response.json();
-                console.log('Dados de taxas:', data);
-                if (!data.taxas) throw new Error('Formato de dados inválido: taxas não encontrado.');
-                taxasDiv.textContent = `11 números: ${data.taxas.acertos_11}, 12 números: ${data.taxas.acertos_12}`;
+                console.log('Dados de histórico:', data);
+                if (!data.sorteios || !Array.isArray(data.sorteios)) {
+                    throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
+                }
+                const now = new Date();
+                const lastSunday = new Date(now.setDate(now.getDate() - now.getDay()));
+                const thisWeekSorteios = data.sorteios.filter(s => {
+                    const sorteioDate = new Date(s.data);
+                    return sorteioDate >= lastSunday && sorteioDate < now;
+                });
+                const palpiteSemana = JSON.parse(localStorage.getItem('palpiteSemana') || '{}').numeros || [];
+                let acertos = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
+                thisWeekSorteios.forEach(sorteio => {
+                    const matches = sorteio.numeros.filter(num => palpiteSemana.includes(num)).length;
+                    if (matches >= 11) acertos[matches]++;
+                });
+                const totalSorteios = thisWeekSorteios.length || 1;
+                const taxas = {
+                    acertos_11: `${((acertos[11] / totalSorteios) * 100).toFixed(1)}%`,
+                    acertos_12: `${((acertos[12] / totalSorteios) * 100).toFixed(1)}%`,
+                    acertos_13: `${((acertos[13] / totalSorteios) * 100).toFixed(1)}%`,
+                    acertos_14: `${((acertos[14] / totalSorteios) * 100).toFixed(1)}%`,
+                    acertos_15: `${((acertos[15] / totalSorteios) * 100).toFixed(1)}%`
+                };
+                taxasDiv.textContent = `11 números: ${taxas.acertos_11}, 12 números: ${taxas.acertos_12}, 13 números: ${taxas.acertos_13}, 14 números: ${taxas.acertos_14}, 15 números: ${taxas.acertos_15}`;
             } catch (error) {
                 console.error('Erro ao carregar taxas:', error.message);
                 taxasDiv.textContent = 'Erro ao carregar taxas: ' + error.message;
@@ -339,7 +372,7 @@
             }
         }
 
-        // Carregar histórico e palpite ao iniciar
+        // Carregar histórico, palpite e taxas ao iniciar
         carregarHistorico();
         carregarPalpiteSemana();
         carregarTaxasAcerto();
