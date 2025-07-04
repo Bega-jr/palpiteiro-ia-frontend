@@ -51,7 +51,7 @@
     <!-- Seção de Monetização -->
     <div class="bg-gray-200 p-4 mt-4 text-center">
         <h3 class="text-lg font-semibold">Apoie o Palpiteiro IA!</h3>
-        <p>Faça uma doação via Pix: [insira-sua-chave-pix] ou assine o Premium por R$19,90/mês para palpites diários e taxas detalhadas.</p>
+        <p>Faça uma doação via <a href="https://link.mercadopago.com.br/palpiteiroia" target="_blank" class="text-blue-600 underline">Mercado Pago</a> ou assine o Premium por R$19,90/mês para palpites diários e taxas detalhadas.</p>
         <a href="/premium" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Assine Premium</a>
     </div>
 
@@ -232,12 +232,18 @@
                     const frequency = {};
                     allNumbers.forEach(num => frequency[num] = (frequency[num] || 0) + 1);
                     const sortedNumbers = Object.keys(frequency).sort((a, b) => frequency[b] - frequency[a]);
-                    const top15 = sortedNumbers.slice(0, 15).map(Number);
+                    const uniqueTop15 = [...new Set(sortedNumbers)].slice(0, 15).map(Number); // Garantir unicidade
+                    if (uniqueTop15.length < 15) {
+                        const missing = 15 - uniqueTop15.length;
+                        const additional = Array.from({ length: missing }, () => Math.floor(Math.random() * 25) + 1)
+                            .filter(n => !uniqueTop15.includes(n));
+                        uniqueTop15.push(...additional);
+                    }
                     localStorage.setItem('palpiteSemana', JSON.stringify({
-                        numeros: top15,
+                        numeros: uniqueTop15.sort((a, b) => a - b), // Ordenar para exibição
                         timestamp: new Date().toISOString()
                     }));
-                    palpitesDiv.textContent = top15.join(', ');
+                    palpitesDiv.textContent = uniqueTop15.join(', ');
                 } catch (error) {
                     console.error('Erro ao gerar palpite da semana:', error.message);
                     palpitesDiv.textContent = 'Erro ao carregar palpite da semana: ' + error.message;
