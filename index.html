@@ -1,394 +1,48 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Palpiteiro IA - Lotofácil</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #1d4ed8;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .volante-number {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #e5e7eb;
-            border-radius: 50%;
-            margin: 2px;
-        }
-        .volante-number.sorteado {
-            background-color: #1d4ed8;
-            color: white;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans">
-    <!-- Cabeçalho -->
-    <header class="bg-blue-600 text-white py-4 shadow-md">
-        <div class="container mx-auto px-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Palpiteiro IA - Lotofácil</h1>
-            <div id="auth-section" class="flex items-center space-x-4">
-                <span id="user-name" class="hidden"></span>
-                <button id="login-btn" class="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-200">Entrar com Google</button>
-                <button id="logout-btn" class="hidden bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Sair</button>
-            </div>
-        </div>
-    </header>
+import requests
+import pandas as pd
+from flask import Flask, jsonify, request
+import os
+from flask_cors import CORS
 
-    <!-- Seção de Monetização -->
-    <div class="bg-gray-200 p-4 mt-4 text-center">
-        <h3 class="text-lg font-semibold">Apoie o Palpiteiro IA!</h3>
-        <p>Faça uma doação via <a href="https://link.mercadopago.com.br/palpiteiroia" target="_blank" class="text-blue-600 underline">Mercado Pago</a> ou assine o Premium por R$19,90/mês para palpites diários e taxas detalhadas.</p>
-        <a href="/premium" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Assine Premium</a>
-    </div>
+app = Flask(__name__)
+CORS(app)
 
-    <!-- Conteúdo Principal -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- Seção de Palpite da Semana -->
-        <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4">Palpite da Semana</h2>
-            <div id="palpites" class="bg-white p-4 rounded-lg shadow"></div>
-            <div id="palpite-dia-section" class="mt-4 hidden">
-                <button id="gerar-palpite-dia-btn" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 flex items-center">
-                    <span>Gerar Palpite do Dia</span>
-                    <div id="palpite-dia-spinner" class="spinner ml-2"></div>
-                </button>
-                <div id="palpite-dia" class="mt-4 bg-white p-4 rounded-lg shadow"></div>
-            </div>
-        </section>
+csv_path = 'historico_lotofacil.csv'
+if os.path.exists(csv_path):
+    df = pd.read_csv(csv_path, sep=';')
+else:
+    df = pd.DataFrame(columns=['Concurso', 'Data', 'bola_1', 'bola_2', 'bola_3', 'bola_4', 'bola_5', 'bola_6', 'bola_7', 'bola_8', 'bola_9', 'bola_10', 'bola_11', 'bola_12', 'bola_13', 'bola_14', 'bola_15'])
 
-        <!-- Seção de Taxas de Acerto -->
-        <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4">Taxas de Acerto da Semana Passada</h2>
-            <div id="taxas" class="bg-white p-4 rounded-lg shadow"></div>
-        </section>
+@app.route('/historico', methods=['GET', 'OPTIONS'])
+def historico():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    try:
+        response = requests.get('https://api.guidi.dev.br/loteria/lotofacil/ultimo', timeout=10)
+        if response.status_code != 200:
+            raise ValueError(f"Erro na API: {response.status_code} - {response.text}")
+        data = response.json()
 
-        <!-- Seção de Último Resultado -->
-        <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-4" id="ultimo-resultado-titulo"></h2>
-            <div id="historico-spinner" class="spinner mx-auto"></div>
-            <div id="ultimo-resultado" class="bg-white p-4 rounded-lg shadow">
-                <p id="resultado-crescente" class="mb-2"></p>
-                <p id="resultado-sorteio"></p>
-            </div>
-        </section>
+        # Ajuste na estrutura do JSON da API
+        concurso = data.get('concurso', {}).get('numero')  # Tenta acessar 'numero' dentro de 'concurso'
+        data_sorteio = data.get('concurso', {}).get('data')
+        numeros = data.get('concurso', {}).get('dezenas', [])
 
-        <!-- Seção de Volante -->
-        <section>
-            <h2 class="text-xl font-semibold mb-4">Volante do Último Sorteio</h2>
-            <div id="volante" class="bg-white p-4 rounded-lg shadow flex justify-center">
-                <div id="volante-table" class="grid grid-cols-5 gap-2"></div>
-            </div>
-        </section>
-    </main>
+        if not concurso or not data_sorteio or not numeros:
+            raise ValueError("Estrutura da API inválida ou dados ausentes")
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+        if not df['Concurso'].eq(concurso).any():
+            new_row = {'Concurso': concurso, 'Data': data_sorteio}
+            for i, num in enumerate(numeros, 1):
+                new_row[f'bola_{i}'] = num
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            df.to_csv(csv_path, sep=';', index=False)
+            print(f"Novo concurso adicionado: {concurso}")
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDIAcBJg1FLwMBAKhAcKePw-bxi1piVlXw",
-            authDomain: "palpiteiro-ia.firebaseapp.com",
-            projectId: "palpiteiro-ia",
-            storageBucket: "palpiteiro-ia.firebasestorage.app",
-            messagingSenderId: "1063099774350",
-            appId: "1:1063099774350:web:47e957cfe3cf311b95a0df",
-            measurementId: "G-DLV0MYMSSJ"
-        };
+        return jsonify({'sorteios': df.to_dict('records')})
+    except Exception as e:
+        print(f"Erro na rota /historico: {e}")
+        return jsonify({'error': str(e)}), 500
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        const backendUrl = 'https://palpiteiro-ia-backend-docker.onrender.com';
-
-        // Elementos do DOM
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userName = document.getElementById('user-name');
-        const palpitesDiv = document.getElementById('palpites');
-        const palpiteDiaSection = document.getElementById('palpite-dia-section');
-        const gerarPalpiteDiaBtn = document.getElementById('gerar-palpite-dia-btn');
-        const palpiteDiaDiv = document.getElementById('palpite-dia');
-        const palpiteDiaSpinner = document.getElementById('palpite-dia-spinner');
-        const taxasDiv = document.getElementById('taxas');
-        const historicoSpinner = document.getElementById('historico-spinner');
-        const resultadoCrescente = document.getElementById('resultado-crescente');
-        const resultadoSorteio = document.getElementById('resultado-sorteio');
-        const volanteTable = document.getElementById('volante-table');
-        const ultimoResultadoTitulo = document.getElementById('ultimo-resultado-titulo');
-
-        // Monitorar estado de autenticação
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                console.log('Usuário autenticado:', user.displayName);
-                userName.textContent = `Bem-vindo, ${user.displayName}!`;
-                userName.classList.remove('hidden');
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-                palpiteDiaSection.classList.remove('hidden');
-                await verificarPalpiteDia();
-            } else {
-                console.log('Nenhum usuário autenticado.');
-                userName.textContent = '';
-                userName.classList.add('hidden');
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                palpiteDiaSection.classList.add('hidden');
-                palpiteDiaDiv.textContent = '';
-            }
-            await carregarPalpiteSemana();
-            await carregarTaxasAcerto();
-        });
-
-        // Login com Google
-        loginBtn.addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error('Erro ao fazer login:', error.message);
-                alert('Erro ao fazer login: ' + error.message);
-            }
-        });
-
-        // Logout
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                console.log('Usuário deslogado.');
-            } catch (error) {
-                console.error('Erro ao sair:', error.message);
-                alert('Erro ao sair: ' + error.message);
-            }
-        });
-
-        // Verificar se é domingo para gerar novo palpite semanal
-        function isSunday() {
-            const today = new Date();
-            return today.getDay() === 0; // 0 = Domingo
-        }
-
-        // Verificar se o palpite da semana é válido
-        function isPalpiteSemanaValid() {
-            const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana') || '{}');
-            if (!palpiteData.numeros || !palpiteData.timestamp) return false;
-            const lastGenerated = new Date(palpiteData.timestamp);
-            const now = new Date();
-            const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1 semana em milissegundos
-            return (now - lastGenerated) < oneWeek && lastGenerated.getDay() === 0;
-        }
-
-        // Verificar se o palpite do dia é válido
-        function isPalpiteDiaValid() {
-            const palpiteData = JSON.parse(localStorage.getItem('palpiteDia') || '{}');
-            if (!palpiteData.numeros || !palpiteData.timestamp) return false;
-            const lastGenerated = new Date(palpiteData.timestamp);
-            const now = new Date();
-            const oneDay = 24 * 60 * 60 * 1000; // 1 dia em milissegundos
-            return now.toDateString() === lastGenerated.toDateString();
-        }
-
-        // Carregar Palpite da Semana (15 mais sorteados da semana anterior)
-        async function carregarPalpiteSemana() {
-            if (!isSunday() && isPalpiteSemanaValid()) {
-                const palpiteData = JSON.parse(localStorage.getItem('palpiteSemana'));
-                palpitesDiv.textContent = palpiteData.numeros.join(', ');
-                return;
-            }
-            if (isSunday() || !isPalpiteSemanaValid()) {
-                try {
-                    console.log('Iniciando requisição para /historico (semana)...');
-                    const response = await fetch(`${backendUrl}/historico`, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    console.log('Resposta de /historico:', response.status, response.statusText);
-                    if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                    const data = await response.json();
-                    console.log('Dados de histórico:', data);
-                    if (!data.sorteios || !Array.isArray(data.sorteios)) {
-                        throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
-                    }
-                    const now = new Date();
-                    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    const lastWeekSorteios = data.sorteios.filter(s => {
-                        const sorteioDate = new Date(s.data);
-                        return sorteioDate >= oneWeekAgo && sorteioDate < now;
-                    });
-                    const allNumbers = lastWeekSorteios.flatMap(s => s.numeros);
-                    const frequency = {};
-                    allNumbers.forEach(num => frequency[num] = (frequency[num] || 0) + 1);
-                    const sortedNumbers = Object.keys(frequency).sort((a, b) => frequency[b] - frequency[a]);
-                    const uniqueTop15 = [...new Set(sortedNumbers)].slice(0, 15).map(Number); // Garantir unicidade
-                    if (uniqueTop15.length < 15) {
-                        const missing = 15 - uniqueTop15.length;
-                        const additional = Array.from({ length: missing }, () => Math.floor(Math.random() * 25) + 1)
-                            .filter(n => !uniqueTop15.includes(n));
-                        uniqueTop15.push(...additional);
-                    }
-                    localStorage.setItem('palpiteSemana', JSON.stringify({
-                        numeros: uniqueTop15.sort((a, b) => a - b), // Ordenar para exibição
-                        timestamp: new Date().toISOString()
-                    }));
-                    palpitesDiv.textContent = uniqueTop15.join(', ');
-                } catch (error) {
-                    console.error('Erro ao gerar palpite da semana:', error.message);
-                    palpitesDiv.textContent = 'Erro ao carregar palpite da semana: ' + error.message;
-                    const fallbackPalpite = Array.from({ length: 15 }, () => Math.floor(Math.random() * 25) + 1).sort((a, b) => a - b);
-                    localStorage.setItem('palpiteSemana', JSON.stringify({
-                        numeros: fallbackPalpite,
-                        timestamp: new Date().toISOString()
-                    }));
-                    palpitesDiv.textContent = fallbackPalpite.join(', ');
-                }
-            }
-        }
-
-        // Gerar Palpite do Dia
-        gerarPalpiteDiaBtn.addEventListener('click', async () => {
-            if (isPalpiteDiaValid()) {
-                const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
-                palpiteDiaDiv.textContent = palpiteData.numeros.join(', ');
-                return;
-            }
-            palpiteDiaSpinner.style.display = 'block';
-            palpiteDiaDiv.textContent = '';
-            try {
-                console.log('Iniciando requisição para /gerar_palpites (dia)...');
-                const response = await fetch(`${backendUrl}/gerar_palpites`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                console.log('Resposta de /gerar_palpites:', response.status, response.statusText);
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const data = await response.json();
-                console.log('Dados de palpites:', data);
-                if (!data.palpite || !Array.isArray(data.palpite)) {
-                    throw new Error('Formato de dados inválido: palpite não encontrado ou não é um array.');
-                }
-                localStorage.setItem('palpiteDia', JSON.stringify({
-                    numeros: data.palpite,
-                    timestamp: new Date().toISOString()
-                }));
-                palpiteDiaDiv.textContent = data.palpite.join(', ');
-            } catch (error) {
-                console.error('Erro ao gerar palpite do dia:', error.message);
-                palpiteDiaDiv.textContent = 'Erro ao gerar palpite do dia: ' + error.message;
-            } finally {
-                palpiteDiaSpinner.style.display = 'none';
-            }
-        });
-
-        // Verificar Palpite do Dia
-        async function verificarPalpiteDia() {
-            if (isPalpiteDiaValid()) {
-                const palpiteData = JSON.parse(localStorage.getItem('palpiteDia'));
-                palpiteDiaDiv.textContent = palpiteData.numeros.join(', ');
-            } else {
-                palpiteDiaDiv.textContent = '';
-            }
-        }
-
-        // Carregar Taxas de Acerto da Semana Passada
-        async function carregarTaxasAcerto() {
-            taxasDiv.textContent = '';
-            try {
-                console.log('Iniciando requisição para /historico (taxas)...');
-                const response = await fetch(`${backendUrl}/historico`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                console.log('Resposta de /historico:', response.status, response.statusText);
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const data = await response.json();
-                console.log('Dados de histórico:', data);
-                if (!data.sorteios || !Array.isArray(data.sorteios)) {
-                    throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
-                }
-                const now = new Date();
-                const lastSunday = new Date(now.setDate(now.getDate() - now.getDay()));
-                const thisWeekSorteios = data.sorteios.filter(s => {
-                    const sorteioDate = new Date(s.data);
-                    return sorteioDate >= lastSunday && sorteioDate < now;
-                });
-                const palpiteSemana = JSON.parse(localStorage.getItem('palpiteSemana') || '{}').numeros || [];
-                let acertos = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
-                thisWeekSorteios.forEach(sorteio => {
-                    const matches = sorteio.numeros.filter(num => palpiteSemana.includes(num)).length;
-                    if (matches >= 11) acertos[matches]++;
-                });
-                const totalSorteios = thisWeekSorteios.length || 1;
-                const taxas = {
-                    acertos_11: `${((acertos[11] / totalSorteios) * 100).toFixed(1)}%`,
-                    acertos_12: `${((acertos[12] / totalSorteios) * 100).toFixed(1)}%`,
-                    acertos_13: `${((acertos[13] / totalSorteios) * 100).toFixed(1)}%`,
-                    acertos_14: `${((acertos[14] / totalSorteios) * 100).toFixed(1)}%`,
-                    acertos_15: `${((acertos[15] / totalSorteios) * 100).toFixed(1)}%`
-                };
-                taxasDiv.textContent = `11 números: ${taxas.acertos_11}, 12 números: ${taxas.acertos_12}, 13 números: ${taxas.acertos_13}, 14 números: ${taxas.acertos_14}, 15 números: ${taxas.acertos_15}`;
-            } catch (error) {
-                console.error('Erro ao carregar taxas:', error.message);
-                taxasDiv.textContent = 'Erro ao carregar taxas: ' + error.message;
-            }
-        }
-
-        // Carregar Último Resultado e Volante
-        async function carregarHistorico() {
-            historicoSpinner.style.display = 'block';
-            resultadoCrescente.textContent = '';
-            resultadoSorteio.textContent = '';
-            volanteTable.innerHTML = '';
-            try {
-                console.log('Iniciando requisição para /historico...');
-                const response = await fetch(`${backendUrl}/historico`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                console.log('Resposta de /historico:', response.status, response.statusText);
-                if (!response.ok) throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
-                const data = await response.json();
-                console.log('Dados de histórico:', data);
-                if (!data.sorteios || !Array.isArray(data.sorteios)) {
-                    throw new Error('Formato de dados inválido: sorteios não encontrado ou não é um array.');
-                }
-                const ultimoSorteio = data.sorteios[data.sorteios.length - 1];
-                ultimoResultadoTitulo.textContent = `Último Resultado: ${ultimoSorteio.concurso}`;
-                resultadoCrescente.textContent = `Ordem Crescente: ${ultimoSorteio.numeros.sort((a, b) => a - b).join(', ')}`;
-                resultadoSorteio.textContent = `Ordem de Sorteio: ${ultimoSorteio.numeros.join(', ')}`;
-
-                // Gerar volante
-                const numerosSorteados = ultimoSorteio.numeros;
-                let volanteHTML = '';
-                for (let i = 1; i <= 25; i++) {
-                    const isSorteado = numerosSorteados.includes(i);
-                    volanteHTML += `<div class="volante-number ${isSorteado ? 'sorteado' : ''}">${i}</div>`;
-                }
-                volanteTable.innerHTML = volanteHTML;
-            } catch (error) {
-                console.error('Erro ao carregar histórico:', error.message);
-                resultadoCrescente.textContent = 'Erro ao carregar resultado: ' + error.message;
-            } finally {
-                historicoSpinner.style.display = 'none';
-            }
-        }
-
-        // Carregar histórico, palpite e taxas ao iniciar
-        carregarHistorico();
-        carregarPalpiteSemana();
-        carregarTaxasAcerto();
-    </script>
-</body>
-</html>
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
