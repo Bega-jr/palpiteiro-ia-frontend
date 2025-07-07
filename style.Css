@@ -1,0 +1,28 @@
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+}
+
+#root {
+  max-width: 800px;
+  margin: auto;
+}
+
+.palpite {
+  background: white;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+  color: #333;
+}
+
+.erro {
+  color: red;
+  font-weight: bold;
+}
