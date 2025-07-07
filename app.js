@@ -33,6 +33,29 @@ async function carregarPalpite() {
   }
 }
 
+function renderPremiacao(sorteio) {
+  const container = document.createElement("div");
+  container.className = "bg-gray-50 rounded border border-blue-100 p-3 mt-3";
+
+  const title = document.createElement("h3");
+  title.textContent = "🎯 Premiação";
+  title.className = "font-semibold text-blue-700 mb-2";
+  container.appendChild(title);
+
+  for (let pontos = 15; pontos >= 11; pontos--) {
+    const ganhadores = sorteio[`Ganhadores${pontos}`];
+    const valor = sorteio[`ValorPremio${pontos}`];
+    if (ganhadores != null && valor != null) {
+      const linha = document.createElement("p");
+      linha.className = "text-sm";
+      linha.innerHTML = `• ${pontos} acertos → <strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""} — R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+      container.appendChild(linha);
+    }
+  }
+
+  return container;
+}
+
 async function carregarHistorico() {
   try {
     const data = await fetchData(`${API_BASE}/historico`);
@@ -52,8 +75,9 @@ async function carregarHistorico() {
       <p class="text-sm mt-2"><strong>Números:</strong> ${numeros.join(", ")}</p>
       <p class="text-sm"><strong>Ordem Sorteio:</strong> <span class='text-gray-500 italic'>${s.OrdemSorteio || 'não informada'}</span></p>
       <p class="text-sm"><strong>Local:</strong> <span class='text-gray-500 italic'>${s.Local || 'não informado'}</span></p>
-      <p class="text-sm"><strong>Premiação (15 acertos):</strong> R$ ${Number(s.ValorPremio15 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — ${s.Ganhadores15 || 0} ganhadores</p>
     `;
+
+    div.appendChild(renderPremiacao(s));
     historicoEl.appendChild(div);
     historicoEl.classList.remove("opacity-0");
   } catch (err) {
@@ -71,3 +95,4 @@ document.addEventListener("DOMContentLoaded", () => {
   novaBtn.addEventListener("click", carregarPalpite);
   iniciar();
 });
+
