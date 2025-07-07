@@ -1,57 +1,53 @@
 const API_BASE = "https://palpiteiro-ia-backend-docker.onrender.com";
 
-async function carregar() {
-  const root = document.getElementById("root");
-  root.innerHTML = "<h1>Palpiteiro IA</h1>";
+const erroEl = document.getElementById("erro");
+const palpiteEl = document.getElementById("palpite-container");
+const historicoEl = document.getElementById("historico-container");
 
+async function carregarPalpite() {
   try {
-    const palpitesRes = await fetch(`${API_BASE}/gerar_palpites`);
-    if (!palpitesRes.ok) throw new Error(`HTTP error! status: ${palpitesRes.status}`);
-    const palpitesData = await palpitesRes.json();
-    if (!palpitesData.palpites || !Array.isArray(palpitesData.palpites)) {
-      throw new Error("Dados de palpites inválidos");
-    }
-    root.innerHTML += "<h2>Palpites Sugeridos</h2>";
-    palpitesData.palpites.forEach((p, i) => {
-      const div = document.createElement("div");
-      div.className = "palpite";
-      div.innerText = `Aposta ${i + 1}: ${p.join(", ")}`;
-      root.appendChild(div);
-    });
-  } catch (e) {
-    console.error("Erro ao carregar palpites:", e);
-    root.innerHTML += "<p class='erro'>Erro ao carregar palpites. Tente novamente.</p>";
-  }
+    const res = await fetch(`${API_BASE}/gerar_palpites`);
+    const data = await res.json();
+    const aposta = data.palpites[0] || [];
 
-  try {
-    const historicoRes = await fetch(`${API_BASE}/historico`);
-    if (!historicoRes.ok) throw new Error(`HTTP error! status: ${historicoRes.status}`);
-    const historicoData = await historicoRes.json();
-    if (!historicoData.sorteios || !Array.isArray(historicoData.sorteios)) {
-      throw new Error("Dados de histórico inválidos");
-    }
-    root.innerHTML += "<h2>Últimos Sorteios</h2>";
-    historicoData.sorteios.forEach((s) => {
-      const numeros = [];
-      for (let j = 1; j <= 15; j++) {
-        const bola = s[`bola_${j}`];
-        if (bola) numeros.push(bola);
-      }
-      const div = document.createElement("div");
-      div.className = "palpite";
-      div.innerHTML = `
-        <strong>Concurso ${s.Concurso} (${s.Data})</strong><br>
-        Números: ${numeros.join(", ")}<br>
-        Ordem Sorteio: ${s.OrdemSorteio || 'N/A'}<br>
-        Local: ${s.Local || 'N/A'}<br>
-        Prêmio 15 acertos: R$ ${s.ValorPremio15.toFixed(2) || '0.00'} (Ganhadores: ${s.Ganhadores15 || 0})
-      `;
-      root.appendChild(div);
+    aposta.forEach(num => {
+      const span = document.createElement("span");
+      span.textContent = num.toString().padStart(2, '0');
+      span.className = "bg-blue-500 text-white text-sm font-bold px-3 py-1 rounded-full text-center";
+      palpiteEl.appendChild(span);
     });
-  } catch (e) {
-    console.error("Erro ao carregar histórico:", e);
-    root.innerHTML += "<p class='erro'>Erro ao carregar histórico. Tente novamente.</p>";
+  } catch (err) {
+    erroEl.textContent = "Erro ao carregar a aposta sugerida.";
   }
 }
 
-document.addEventListener("DOMContentLoaded", carregar);
+async function carregarHistorico() {
+  try {
+    const res = await fetch(`${API_BASE}/historico`);
+    const data = await res.json();
+    const sorteios = data.sorteios.reverse();
+
+    sorteios.forEach((s) => {
+      const div = document.createElement("div");
+      const numeros = [];
+      for (let i = 1; i <= 15; i++) {
+        const bola = s[`bola_${i}`];
+        if (bola) numeros.push(bola);
+      }
+      div.className = "bg-white rounded shadow-md p-4";
+      div.innerHTML = `
+        <p class="font-semibold text-blue-700">Concurso ${s.Concurso} <span class="text-gray-600">(${s.Data})</span></p>
+        <p class="text-sm mt-2"><strong>Números:</strong> ${numeros.join(", ")}</p>
+        <p class="text-sm"><strong>Ordem Sorteio:</strong> ${s.OrdemSorteio || 'N/A'}</p>
+        <p class="text-sm"><strong>Local:</strong> ${s.Local || 'N/A'}</p>
+        <p class="text-sm"><strong>Premiação (15 acertos):</strong> R$ ${Number(s.ValorPremio15 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — ${s.Ganhadores15 || 0} ganhadores</p>
+      `;
+      historicoEl.appendChild(div);
+    });
+  } catch (err) {
+    erroEl.textContent = "Erro ao carregar o histórico.";
+  }
+}
+
+carregarPalpite();
+carregarHistorico();
