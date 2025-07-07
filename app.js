@@ -31,7 +31,7 @@ async function carregar() {
       throw new Error("Dados de histórico inválidos");
     }
     root.innerHTML += "<h2>Últimos Sorteios</h2>";
-    historicoData.sorteios.reverse().forEach((s) => {
+    historicoData.sorteios.forEach((s) => {
       const numeros = [];
       for (let j = 1; j <= 15; j++) {
         const bola = s[`bola_${j}`];
@@ -39,7 +39,13 @@ async function carregar() {
       }
       const div = document.createElement("div");
       div.className = "palpite";
-      div.innerHTML = `<strong>Concurso ${s.Concurso} (${s.Data})</strong><br>${numeros.join(", ")}`;
+      div.innerHTML = `
+        <strong>Concurso ${s.Concurso} (${s.Data})</strong><br>
+        Números: ${numeros.join(", ")}<br>
+        Ordem Sorteio: ${s.OrdemSorteio || 'N/A'}<br>
+        Local: ${s.Local || 'N/A'}<br>
+        Prêmio 15 acertos: R$ ${s.ValorPremio15.toFixed(2) || '0.00'} (Ganhadores: ${s.Ganhadores15 || 0})
+      `;
       root.appendChild(div);
     });
   } catch (e) {
