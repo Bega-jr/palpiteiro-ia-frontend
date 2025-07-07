@@ -6,6 +6,7 @@ async function carregar() {
 
   try {
     const palpitesRes = await fetch(`${API_BASE}/gerar_palpites`);
+    if (!palpitesRes.ok) throw new Error(`HTTP error! status: ${palpitesRes.status}`);
     const palpitesData = await palpitesRes.json();
     if (!palpitesData.palpites || !Array.isArray(palpitesData.palpites)) {
       throw new Error("Dados de palpites inválidos");
@@ -24,6 +25,7 @@ async function carregar() {
 
   try {
     const historicoRes = await fetch(`${API_BASE}/historico`);
+    if (!historicoRes.ok) throw new Error(`HTTP error! status: ${historicoRes.status}`);
     const historicoData = await historicoRes.json();
     if (!historicoData.sorteios || !Array.isArray(historicoData.sorteios)) {
       throw new Error("Dados de histórico inválidos");
@@ -47,4 +49,3 @@ async function carregar() {
 }
 
 document.addEventListener("DOMContentLoaded", carregar);
-// Remover chamada duplicada de carregar()
