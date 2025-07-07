@@ -39,5 +39,6 @@ async function carregar() {
     root.innerHTML += "<p class='erro'>Erro ao carregar histórico.</p>";
   }
 }
+document.addEventListener("DOMContentLoaded", carregar);
 
 carregar();
