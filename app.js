@@ -3,6 +3,7 @@ const erroEl = document.getElementById("erro");
 const palpiteEl = document.getElementById("palpite-container");
 const historicoEl = document.getElementById("historico-container");
 const spinner = document.getElementById("spinner");
+const novaBtn = document.getElementById("nova-aposta");
 
 const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-amber-500", "bg-pink-500"];
 
@@ -14,6 +15,7 @@ async function fetchData(url) {
 
 async function carregarPalpite() {
   try {
+    palpiteEl.innerHTML = "";
     const data = await fetchData(`${API_BASE}/gerar_palpites`);
     const aposta = data.palpites[0] || [];
 
@@ -35,7 +37,7 @@ async function carregarHistorico() {
   try {
     const data = await fetchData(`${API_BASE}/historico`);
     const sorteios = data.sorteios.reverse();
-    const s = sorteios[0]; // Pegar o último
+    const s = sorteios[0];
 
     const numeros = [];
     for (let i = 1; i <= 15; i++) {
@@ -65,4 +67,7 @@ async function iniciar() {
   spinner.remove();
 }
 
-iniciar();
+document.addEventListener("DOMContentLoaded", () => {
+  novaBtn.addEventListener("click", carregarPalpite);
+  iniciar();
+});
