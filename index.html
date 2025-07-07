@@ -51,9 +51,14 @@
           const div = document.getElementById("historico");
           div.innerHTML = "";
           data.sorteios.forEach(sorteio => {
+            const numeros = [];
+            for (let i = 1; i <= 15; i++) {
+              const bola = sorteio[`bola_${i}`];
+              if (bola) numeros.push(bola);
+            }
             const item = document.createElement("div");
             item.className = "palpite";
-            item.innerText = `Concurso ${sorteio.concurso} (${sorteio.data}): ${sorteio.numeros.join(", ")}`;
+            item.innerText = `Concurso ${sorteio.Concurso} (${sorteio.Data}): ${numeros.join(", ")}`;
             div.appendChild(item);
           });
         })
