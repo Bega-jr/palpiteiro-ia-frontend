@@ -1,7 +1,8 @@
 const API_BASE = "https://palpiteiro-ia-backend-docker.onrender.com";
 const erroEl = document.getElementById("erro");
 const palpiteEl = document.getElementById("palpite-container");
-const historicoEl = document.getElementById("historico-container");
+const historicoDetailsEl = document.getElementById("sorteio-details");
+const prizeBoxEl = document.getElementById("prize-box");
 const spinnerEl = document.getElementById("spinner");
 
 function showSpinner() {
@@ -47,19 +48,27 @@ function carregarPalpite(data) {
 
 function carregarHistorico(data) {
   const sorteios = data.sorteios.reverse();
-  sorteios.forEach((s) => {
-    const div = document.createElement("div");
-    const numeros = Array.from({ length: 15 }, (_, i) => s[`bola_${i + 1}`] || '').filter(Boolean);
-    div.className = "bg-white rounded shadow-md p-4 mb-4";
-    div.innerHTML = `
-      <p class="font-semibold text-blue-700">Concurso ${s.Concurso} <span class="text-gray-600">(${s.Data})</span></p>
+  const latestSorteio = sorteios[0]; // Pega o último sorteio
+  const numeros = Array.from({ length: 15 }, (_, i) => latestSorteio[`bola_${i + 1}`] || '').filter(Boolean);
+
+  historicoDetailsEl.innerHTML = `
+    <div class="bg-white rounded shadow-md p-4">
+      <p class="font-semibold text-blue-700">Concurso ${latestSorteio.Concurso} <span class="text-gray-600">(${latestSorteio.Data})</span></p>
       <p class="text-sm mt-2"><strong>Números:</strong> ${numeros.join(", ")}</p>
-      <p class="text-sm"><strong>Ordem Sorteio:</strong> ${s.OrdemSorteio || 'N/A'}</p>
-      <p class="text-sm"><strong>Local:</strong> ${s.Local || 'N/A'}</p>
-      <p class="text-sm"><strong>Premiação (15 acertos):</strong> R$ ${Number(s.ValorPremio15 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — ${s.Ganhadores15 || 0} ganhadores</p>
-    `;
-    historicoEl.appendChild(div);
-  });
+      <p class="text-sm"><strong>Ordem Sorteio:</strong> ${latestSorteio.OrdemSorteio || 'N/A'}</p>
+      <p class="text-sm"><strong>Local:</strong> ${latestSorteio.Local || 'N/A'}</p>
+    </div>
+  `;
+
+  prizeBoxEl.innerHTML = `
+    <div class="prize-box">
+      <h3 class="text-md font-semibold text-blue-700 mb-2">Premiações</h3>
+      <p class="text-sm"><strong>15 acertos:</strong> R$ ${Number(latestSorteio.ValorPremio15 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — <span class="font-bold">${latestSorteio.Ganhadores15 || 0}</span> ganhadores</p>
+      <p class="text-sm"><strong>14 acertos:</strong> R$ ${(data.sorteios[0].listaRateioPremio?.find(f => f.faixa === 2)?.valorPremio || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — <span class="font-bold">${data.sorteios[0].listaRateioPremio?.find(f => f.faixa === 2)?.numeroDeGanhadores || 0}</span> ganhadores</p>
+      <p class="text-sm"><strong>13 acertos:</strong> R$ ${(data.sorteios[0].listaRateioPremio?.find(f => f.faixa === 3)?.valorPremio || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} — <span class="font-bold">${data.sorteios[0].listaRateioPremio?.find(f => f.faixa === 3)?.numeroDeGanhadores || 0}</span> ganhadores</p>
+    </div>
+  `;
+  prizeBoxEl.classList.remove("hidden");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
