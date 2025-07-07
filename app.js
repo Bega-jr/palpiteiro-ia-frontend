@@ -4,6 +4,7 @@ const palpiteEl = document.getElementById("palpite-container");
 const historicoEl = document.getElementById("historico-container");
 const spinnerEl = document.getElementById("spinner");
 const novaBtn = document.getElementById("nova-aposta");
+const sorteioInfoEl = document.getElementById("sorteio-info");
 
 const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-amber-500", "bg-pink-500"];
 
@@ -69,7 +70,9 @@ function renderPremiacao(sorteio) {
   title.className = "font-semibold text-blue-700 mb-2";
   container.appendChild(title);
 
-  for (let pontos = 15; pontos >= 11; pontos--) {
+  const visibleFaixas = 3; // Mostra apenas 3 faixas inicialmente
+  let faixasExibidas = 0;
+  for (let pontos = 15; pontos >= 11 && faixasExibidas < visibleFaixas; pontos--) {
     const ganhadoresKey = `Ganhadores${pontos}`;
     const valorKey = `ValorPremio${pontos}`;
     const ganhadores = sorteio[ganhadoresKey];
@@ -79,7 +82,30 @@ function renderPremiacao(sorteio) {
       linha.className = "text-sm";
       linha.innerHTML = `• ${pontos} acertos → <strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""} — R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
       container.appendChild(linha);
+      faixasExibidas++;
     }
+  }
+  if (faixasExibidas < 5) { // Se houver mais faixas
+    const verMais = document.createElement("button");
+    verMais.textContent = "Ver Mais";
+    verMais.className = "text-blue-500 hover:text-blue-700 mt-2";
+    verMais.addEventListener("click", () => {
+      container.innerHTML = ""; // Recria com todas as faixas
+      container.appendChild(title);
+      for (let pontos = 15; pontos >= 11; pontos--) {
+        const ganhadoresKey = `Ganhadores${pontos}`;
+        const valorKey = `ValorPremio${pontos}`;
+        const ganhadores = sorteio[ganhadoresKey];
+        const valor = sorteio[valorKey];
+        if (ganhadores != null && valor != null) {
+          const linha = document.createElement("p");
+          linha.className = "text-sm";
+          linha.innerHTML = `• ${pontos} acertos → <strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""} — R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+          container.appendChild(linha);
+        }
+      }
+    });
+    container.appendChild(verMais);
   }
   return container;
 }
@@ -102,7 +128,9 @@ async function carregarHistorico() {
     div.appendChild(renderPremiacao(s));
     historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
+    sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
     fadeIn(historicoEl);
+    fadeIn(sorteioInfoEl);
   } catch (err) {
     showError("Erro ao carregar o histórico.");
   }
@@ -117,6 +145,10 @@ async function iniciar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  novaBtn.addEventListener("click", carregarPalpite);
+  let debounceTimeout;
+  novaBtn.addEventListener("click", () => {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(carregarPalpite, 500);
+  });
   iniciar();
 });
