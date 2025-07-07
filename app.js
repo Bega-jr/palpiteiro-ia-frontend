@@ -2,15 +2,46 @@ const API_BASE = "https://palpiteiro-ia-backend-docker.onrender.com";
 const erroEl = document.getElementById("erro");
 const palpiteEl = document.getElementById("palpite-container");
 const historicoEl = document.getElementById("historico-container");
-const spinner = document.getElementById("spinner");
+const spinnerEl = document.getElementById("spinner");
 const novaBtn = document.getElementById("nova-aposta");
 
 const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-amber-500", "bg-pink-500"];
 
+function showSpinner() {
+  spinnerEl.classList.remove("hidden");
+}
+
+function hideSpinner() {
+  spinnerEl.classList.add("hidden");
+}
+
+function showError(message) {
+  hideSpinner();
+  erroEl.textContent = message;
+  erroEl.classList.remove("hidden");
+}
+
+function fadeIn(element) {
+  element.classList.remove("opacity-0");
+  element.classList.add("fade-in");
+}
+
 async function fetchData(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Erro ao buscar dados");
-  return await res.json();
+  showSpinner();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    const data = await res.json();
+    if (!data || (url.includes('gerar_palpites') && !data.palpites) || (url.includes('historico') && !data.sorteios)) {
+      throw new Error("Dados inválidos");
+    }
+    return data;
+  } catch (err) {
+    console.error(`Erro ao carregar ${url}:`, err);
+    throw err;
+  } finally {
+    hideSpinner();
+  }
 }
 
 async function carregarPalpite() {
@@ -18,33 +49,31 @@ async function carregarPalpite() {
     palpiteEl.innerHTML = "";
     const data = await fetchData(`${API_BASE}/gerar_palpites`);
     const aposta = data.palpites[0] || [];
-
     aposta.forEach(num => {
       const span = document.createElement("span");
       span.textContent = num.toString().padStart(2, '0');
-      span.className = `text-white text-sm font-bold px-3 py-1 rounded-full text-center shadow ${colors[Math.floor(Math.random() * colors.length)]}`;
+      span.className = `palpite-span ${colors[Math.floor(Math.random() * colors.length)]}`;
       palpiteEl.appendChild(span);
     });
-
-    palpiteEl.classList.remove("opacity-0");
+    fadeIn(palpiteEl);
   } catch (err) {
-    erroEl.textContent = "Erro ao carregar a aposta sugerida.";
-    erroEl.classList.remove("hidden");
+    showError("Erro ao carregar a aposta sugerida.");
   }
 }
 
 function renderPremiacao(sorteio) {
   const container = document.createElement("div");
   container.className = "bg-gray-50 rounded border border-blue-100 p-3 mt-3";
-
   const title = document.createElement("h3");
   title.textContent = "🎯 Premiação";
   title.className = "font-semibold text-blue-700 mb-2";
   container.appendChild(title);
 
   for (let pontos = 15; pontos >= 11; pontos--) {
-    const ganhadores = sorteio[`Ganhadores${pontos}`];
-    const valor = sorteio[`ValorPremio${pontos}`];
+    const ganhadoresKey = `Ganhadores${pontos}`;
+    const valorKey = `ValorPremio${pontos}`;
+    const ganhadores = sorteio[ganhadoresKey];
+    const valor = sorteio[valorKey];
     if (ganhadores != null && valor != null) {
       const linha = document.createElement("p");
       linha.className = "text-sm";
@@ -52,7 +81,6 @@ function renderPremiacao(sorteio) {
       container.appendChild(linha);
     }
   }
-
   return container;
 }
 
@@ -62,12 +90,7 @@ async function carregarHistorico() {
     const sorteios = data.sorteios.reverse();
     const s = sorteios[0];
 
-    const numeros = [];
-    for (let i = 1; i <= 15; i++) {
-      const bola = s[`bola_${i}`];
-      if (bola) numeros.push(bola);
-    }
-
+    const numeros = Array.from({ length: 15 }, (_, i) => s[`bola_${i + 1}`] || '').filter(Boolean);
     const div = document.createElement("div");
     div.className = "bg-white rounded shadow-md p-4";
     div.innerHTML = `
@@ -76,23 +99,24 @@ async function carregarHistorico() {
       <p class="text-sm"><strong>Ordem Sorteio:</strong> <span class='text-gray-500 italic'>${s.OrdemSorteio || 'não informada'}</span></p>
       <p class="text-sm"><strong>Local:</strong> <span class='text-gray-500 italic'>${s.Local || 'não informado'}</span></p>
     `;
-
     div.appendChild(renderPremiacao(s));
+    historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
-    historicoEl.classList.remove("opacity-0");
+    fadeIn(historicoEl);
   } catch (err) {
-    erroEl.textContent = "Erro ao carregar o histórico.";
-    erroEl.classList.remove("hidden");
+    showError("Erro ao carregar o histórico.");
   }
 }
 
 async function iniciar() {
-  await Promise.all([carregarPalpite(), carregarHistorico()]);
-  spinner.remove();
+  try {
+    await Promise.all([carregarPalpite(), carregarHistorico()]);
+  } catch (err) {
+    showError("Erro ao iniciar o aplicativo.");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   novaBtn.addEventListener("click", carregarPalpite);
   iniciar();
 });
-
