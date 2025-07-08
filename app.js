@@ -138,8 +138,8 @@ async function carregarHistorico() {
     const extraInfo = document.createElement("div");
     extraInfo.className = "extra-info";
     extraInfo.innerHTML = `
-      <p><strong>Arrecadação:</strong> R$ ${sorteio.valorArrecadado || 'Não informado'}</p>
-      <p><strong>Próximo Concurso:</strong> ${sorteio.dataProximoConcurso || 'Não informado'} - Est. R$ ${sorteio.valorEstimadoProximoConcurso || '0,00'}</p>
+      <p><strong>Arrecadação:</strong> R$ ${s.valorArrecadado || 'Não informado'}</p>
+      <p><strong>Próximo Concurso:</strong> ${s.dataProximoConcurso || 'Não informado'} - Est. R$ ${s.valorEstimadoProximoConcurso || '0,00'}</p>
     `;
     div.appendChild(extraInfo);
     historicoEl.innerHTML = "";
@@ -148,7 +148,37 @@ async function carregarHistorico() {
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
   } catch (err) {
-    showError("Erro ao carregar o histórico.");
+    showError("Erro ao carregar o histórico. Usando dados de exemplo.");
+    const s = {
+      Concurso: "3436", Data: "07/07/2025", Local: "SÃO PAULO, SP",
+      bola_1: "01", bola_2: "02", bola_3: "03", bola_4: "04", bola_5: "05",
+      bola_6: "06", bola_7: "07", bola_8: "08", bola_9: "09", bola_10: "10",
+      bola_11: "11", bola_12: "12", bola_13: "13", bola_14: "14", bola_15: "15",
+      OrdemSorteio: "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15",
+      Ganhadores15: 1, ValorPremio15: 1806333.97,
+      Ganhadores14: 248, ValorPremio14: 2181.72,
+      Ganhadores13: 9800, ValorPremio13: 30.0,
+      Ganhadores12: 111936, ValorPremio12: 12.0,
+      Ganhadores11: 627357, ValorPremio11: 6.0
+    };
+    const div = document.createElement("div");
+    div.className = "palpite";
+    div.innerHTML = `
+      <p class="font-semibold text-blue-700">Concurso ${s.Concurso} <span class="text-gray-600">(${s.Data})</span></p>
+      <p class="text-sm mt-2"><strong>Números:</strong> ${Object.values({bola_1: s.bola_1, bola_2: s.bola_2, bola_3: s.bola_3, bola_4: s.bola_4, bola_5: s.bola_5, bola_6: s.bola_6, bola_7: s.bola_7, bola_8: s.bola_8, bola_9: s.bola_9, bola_10: s.bola_10, bola_11: s.bola_11, bola_12: s.bola_12, bola_13: s.bola_13, bola_14: s.bola_14, bola_15: s.bola_15}).join(", ")}</p>
+      <p class="text-sm"><strong>Ordem Sorteio:</strong> <span class='text-gray-600 italic'>${s.OrdemSorteio || 'não informada'}</span></p>
+      <p class="text-sm"><strong>Local:</strong> <span class='text-gray-600 italic'>${s.Local || 'não informado'}</span></p>
+    `;
+    div.appendChild(renderPremiacao(s));
+    const extraInfo = document.createElement("div");
+    extraInfo.className = "extra-info";
+    extraInfo.innerHTML = `<p><strong>Arrecadação:</strong> R$ Não informado</p><p><strong>Próximo Concurso:</strong> Não informado - Est. R$ 0,00</p>`;
+    div.appendChild(extraInfo);
+    historicoEl.innerHTML = "";
+    historicoEl.appendChild(div);
+    sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
+    fadeIn(historicoEl);
+    fadeIn(sorteioInfoEl);
   }
 }
 
