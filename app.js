@@ -4,6 +4,7 @@ const palpiteEl = document.getElementById("palpite-container");
 const historicoEl = document.getElementById("historico-container");
 const spinnerEl = document.getElementById("spinner");
 const novaBtn = document.getElementById("nova-aposta");
+const estatisticasBtn = document.getElementById("estatisticas-btn");
 const sorteioInfoEl = document.getElementById("sorteio-info");
 
 function showSpinner() {
@@ -51,7 +52,12 @@ async function carregarPalpite() {
     aposta.forEach(num => {
       const span = document.createElement("span");
       span.textContent = num.toString().padStart(2, '0');
-      span.className = "palpite-span"; // Usando classe do style.css
+      span.className = "palpite-span";
+      span.style.display = "inline-block";
+      span.style.width = "40px";
+      span.style.height = "40px";
+      span.style.lineHeight = "40px";
+      span.style.textAlign = "center";
       palpiteEl.appendChild(span);
     });
     fadeIn(palpiteEl);
@@ -62,12 +68,14 @@ async function carregarPalpite() {
 
 function renderPremiacao(sorteio) {
   const container = document.createElement("div");
-  container.className = "palpite"; // Usando classe do style.css
+  container.className = "palpite";
   const title = document.createElement("h3");
   title.textContent = "🎯 Premiação";
-  title.className = "text-blue-700 font-semibold mb-2"; // Ajustado pra compatibilidade
+  title.className = "text-blue-700 font-semibold mb-2";
   container.appendChild(title);
 
+  const table = document.createElement("table");
+  table.className = "premiacao-table";
   const visibleFaixas = 3;
   let faixasExibidas = 0;
   for (let pontos = 15; pontos >= 11 && faixasExibidas < visibleFaixas; pontos--) {
@@ -76,33 +84,35 @@ function renderPremiacao(sorteio) {
     const ganhadores = sorteio[ganhadoresKey] || 0;
     const valor = sorteio[valorKey] || 0;
     if (ganhadores !== null || valor !== null) {
-      console.log(`Faixa ${pontos}: Ganhadores=${ganhadores}, Valor=${valor}`);
-      const linha = document.createElement("p");
-      linha.className = "text-sm";
-      linha.innerHTML = `• ${pontos} acertos → <strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""} — R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-      container.appendChild(linha);
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${pontos} acertos</td><td><strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""}</td><td>R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>`;
+      table.appendChild(row);
       faixasExibidas++;
     }
   }
+  container.appendChild(table);
+
   if (faixasExibidas < 5) {
     const verMais = document.createElement("button");
     verMais.textContent = "Ver Mais";
-    verMais.className = "text-blue-500 hover:text-blue-700 mt-2"; // Ajustado
+    verMais.className = "text-blue-500 hover:text-blue-700 mt-2";
     verMais.addEventListener("click", () => {
       container.innerHTML = "";
       container.appendChild(title);
+      const fullTable = document.createElement("table");
+      fullTable.className = "premiacao-table";
       for (let pontos = 15; pontos >= 11; pontos--) {
         const ganhadoresKey = `Ganhadores${pontos}`;
         const valorKey = `ValorPremio${pontos}`;
         const ganhadores = sorteio[ganhadoresKey] || 0;
         const valor = sorteio[valorKey] || 0;
         if (ganhadores !== null || valor !== null) {
-          const linha = document.createElement("p");
-          linha.className = "text-sm";
-          linha.innerHTML = `• ${pontos} acertos → <strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""} — R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-          container.appendChild(linha);
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${pontos} acertos</td><td><strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""}</td><td>R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>`;
+          fullTable.appendChild(row);
         }
       }
+      container.appendChild(fullTable);
     });
     container.appendChild(verMais);
   }
@@ -125,6 +135,13 @@ async function carregarHistorico() {
       <p class="text-sm"><strong>Local:</strong> <span class='text-gray-600 italic'>${s.Local || 'não informado'}</span></p>
     `;
     div.appendChild(renderPremiacao(s));
+    const extraInfo = document.createElement("div");
+    extraInfo.className = "extra-info";
+    extraInfo.innerHTML = `
+      <p><strong>Arrecadação:</strong> R$ ${sorteio.valorArrecadado || 'Não informado'}</p>
+      <p><strong>Próximo Concurso:</strong> ${sorteio.dataProximoConcurso || 'Não informado'} - Est. R$ ${sorteio.valorEstimadoProximoConcurso || '0,00'}</p>
+    `;
+    div.appendChild(extraInfo);
     historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
     sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
@@ -149,7 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(carregarPalpite, 500);
   });
+  estatisticasBtn.addEventListener("click", () => {
+    alert("Funcionalidade de estatísticas em desenvolvimento!");
+  });
   iniciar();
 });
-
-// Adicionar classe palpite-span no style.css se necessário
