@@ -97,3 +97,12 @@ h2 {
 .nova-aposta:hover {
   background-color: #0d47a1;
 }
+.palpite-span {
+  background-color: #1976d2; /* Cor do botão como base */
+  color: white;
+  font-weight: bold;
+  padding: 3px 8px;
+  margin: 2px;
+  border-radius: 10px;
+  display: inline-block;
+}
