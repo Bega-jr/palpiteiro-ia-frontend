@@ -12,6 +12,16 @@ body {
   animation: fadeIn 0.6s ease-in-out;
 }
 
+header {
+  position: sticky;
+  top: 0;
+  background: #1976d2;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  z-index: 10;
+}
+
 .palpite {
   background: #ffffff;
   padding: 15px;
@@ -97,12 +107,59 @@ h2 {
 .nova-aposta:hover {
   background-color: #0d47a1;
 }
+
 .palpite-span {
-  background-color: #1976d2; /* Cor do botão como base */
+  background-color: #1976d2;
   color: white;
   font-weight: bold;
-  padding: 3px 8px;
+  padding: 0;
   margin: 2px;
-  border-radius: 10px;
+  border-radius: 5px;
   display: inline-block;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.premiacao-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.premiacao-table td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.premiacao-table td:first-child {
+  font-weight: bold;
+  background-color: #f5f5f5;
+}
+
+.extra-info {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.extra-info p {
+  margin: 5px 0;
+}
+
+@media (max-width: 600px) {
+  #root {
+    padding: 10px;
+  }
+  .palpite-span {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9em;
+  }
+  .premiacao-table td {
+    padding: 5px;
+    font-size: 0.8em;
+  }
 }
