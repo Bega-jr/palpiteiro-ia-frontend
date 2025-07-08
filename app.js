@@ -76,9 +76,7 @@ function renderPremiacao(sorteio) {
 
   const table = document.createElement("table");
   table.className = "premiacao-table";
-  const visibleFaixas = 3;
-  let faixasExibidas = 0;
-  for (let pontos = 15; pontos >= 11 && faixasExibidas < visibleFaixas; pontos--) {
+  for (let pontos = 15; pontos >= 11; pontos--) {
     const ganhadoresKey = `Ganhadores${pontos}`;
     const valorKey = `ValorPremio${pontos}`;
     const ganhadores = sorteio[ganhadoresKey] || 0;
@@ -87,35 +85,9 @@ function renderPremiacao(sorteio) {
       const row = document.createElement("tr");
       row.innerHTML = `<td>${pontos} acertos</td><td><strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""}</td><td>R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>`;
       table.appendChild(row);
-      faixasExibidas++;
     }
   }
   container.appendChild(table);
-
-  if (faixasExibidas < 5) {
-    const verMais = document.createElement("button");
-    verMais.textContent = "Ver Mais";
-    verMais.className = "text-blue-500 hover:text-blue-700 mt-2";
-    verMais.addEventListener("click", () => {
-      container.innerHTML = "";
-      container.appendChild(title);
-      const fullTable = document.createElement("table");
-      fullTable.className = "premiacao-table";
-      for (let pontos = 15; pontos >= 11; pontos--) {
-        const ganhadoresKey = `Ganhadores${pontos}`;
-        const valorKey = `ValorPremio${pontos}`;
-        const ganhadores = sorteio[ganhadoresKey] || 0;
-        const valor = sorteio[valorKey] || 0;
-        if (ganhadores !== null || valor !== null) {
-          const row = document.createElement("tr");
-          row.innerHTML = `<td>${pontos} acertos</td><td><strong>${ganhadores}</strong> ganhador${ganhadores !== 1 ? "es" : ""}</td><td>R$ ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>`;
-          fullTable.appendChild(row);
-        }
-      }
-      container.appendChild(fullTable);
-    });
-    container.appendChild(verMais);
-  }
   return container;
 }
 
@@ -172,7 +144,10 @@ async function carregarHistorico() {
     div.appendChild(renderPremiacao(s));
     const extraInfo = document.createElement("div");
     extraInfo.className = "extra-info";
-    extraInfo.innerHTML = `<p><strong>Arrecadação:</strong> R$ Não informado</p><p><strong>Próximo Concurso:</strong> Não informado - Est. R$ 0,00</p>`;
+    extraInfo.innerHTML = `
+      <p><strong>Arrecadação:</strong> R$ ${s.valorArrecadado || 'Não informado'}</p>
+      <p><strong>Próximo Concurso:</strong> ${s.dataProximoConcurso || 'Não informado'} - Est. R$ ${s.valorEstimadoProximoConcurso || '0,00'}</p>
+    `;
     div.appendChild(extraInfo);
     historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
