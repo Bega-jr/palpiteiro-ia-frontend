@@ -7,6 +7,8 @@ const novaBtn = document.getElementById("nova-aposta");
 const estatisticasBtn = document.getElementById("estatisticas-btn");
 const sorteioInfoEl = document.getElementById("sorteio-info");
 const proximoSorteioEl = document.getElementById("proximo-sorteio");
+const loginBtn = document.getElementById("login-btn");
+const loginOptions = document.getElementById("login-options");
 const apostasLogadoEl = document.getElementById("apostas-logado");
 const apostasBodyEl = document.getElementById("apostas-body");
 
@@ -199,7 +201,16 @@ document.addEventListener("DOMContentLoaded", () => {
   estatisticasBtn.addEventListener("click", () => {
     alert("Funcionalidade de estatísticas em desenvolvimento!");
   });
-  document.getElementById("login-google").addEventListener("click", () => alert("Login com Google em desenvolvimento!"));
-  document.getElementById("login-email").addEventListener("click", () => alert("Login com E-mail em desenvolvimento!"));
+  loginBtn.addEventListener("click", () => {
+    loginOptions.style.display = loginOptions.style.display === "none" ? "block" : "none";
+  });
+  document.getElementById("login-google").addEventListener("click", () => {
+    loginOptions.style.display = "none";
+    alert("Login com Google em desenvolvimento!");
+  });
+  document.getElementById("login-email").addEventListener("click", () => {
+    loginOptions.style.display = "none";
+    alert("Login com E-mail em desenvolvimento!");
+  });
   iniciar();
 });
