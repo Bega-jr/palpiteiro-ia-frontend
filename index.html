@@ -10,7 +10,11 @@
   <div id="root">
     <header>
       <h1>Palpiteiro IA</h1>
-      <p id="sorteio-info" class="sorteio-info"></p>
+      <div id="login-section" class="login-section">
+        <button id="login-google" class="login-btn">Entrar com Google</button>
+        <button id="login-email" class="login-btn">Entrar com E-mail</button>
+      </div>
+      <p id="proximo-sorteio" class="sorteio-info"></p>
     </header>
     <main>
       <section id="palpite-section" class="palpite">
@@ -25,6 +29,20 @@
       <div id="erro" class="erro"></div>
       <div id="spinner" class="spinner"></div>
       <button id="estatisticas-btn" class="nova-aposta">Ver Estatísticas</button>
+      <!-- Tabelinha lateral para usuários logados -->
+      <aside id="apostas-logado" class="apostas-logado" style="display: none;">
+        <h3>Minhas Apostas</h3>
+        <table id="apostas-table" class="apostas-table">
+          <thead>
+            <tr>
+              <th>Concurso</th>
+              <th>Números</th>
+              <th>Acertos</th>
+            </tr>
+          </thead>
+          <tbody id="apostas-body"></tbody>
+        </table>
+      </aside>
     </main>
     <footer>
       <p>© 2025 Palpiteiro IA — Todos os direitos reservados</p>
