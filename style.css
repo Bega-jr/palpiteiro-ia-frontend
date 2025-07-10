@@ -7,7 +7,7 @@ body {
 }
 
 #root {
-  max-width: 800px;
+  max-width: 1000px;
   margin: auto;
   animation: fadeIn 0.6s ease-in-out;
 }
@@ -20,6 +20,41 @@ header {
   padding: 10px;
   text-align: center;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8em;
+}
+
+.login-section {
+  margin: 10px 0;
+}
+
+.login-btn {
+  padding: 8px 16px;
+  margin: 0 5px;
+  background-color: #fff;
+  color: #1976d2;
+  border: 1px solid #1976d2;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-btn:hover {
+  background-color: #0d47a1;
+  color: white;
+}
+
+.sorteio-info {
+  text-align: center;
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 15px;
 }
 
 .palpite {
@@ -33,11 +68,6 @@ header {
 
 .palpite:hover {
   transform: scale(1.02);
-}
-
-h1 {
-  color: #1976d2;
-  text-align: center;
 }
 
 h2 {
@@ -72,13 +102,6 @@ h2 {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.sorteio-info {
-  text-align: center;
-  font-size: 0.9em;
-  color: #555;
-  margin-bottom: 15px;
 }
 
 .palpite-container {
@@ -149,6 +172,36 @@ h2 {
   margin: 5px 0;
 }
 
+.apostas-logado {
+  position: fixed;
+  right: 20px;
+  top: 120px;
+  width: 250px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.apostas-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.apostas-table th,
+.apostas-table td {
+  padding: 5px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.apostas-table th {
+  background-color: #1976d2;
+  color: white;
+}
+
 @media (max-width: 600px) {
   #root {
     padding: 10px;
@@ -161,5 +214,10 @@ h2 {
   .premiacao-table td {
     padding: 5px;
     font-size: 0.8em;
+  }
+  .apostas-logado {
+    position: static;
+    width: 100%;
+    margin-top: 20px;
   }
 }
