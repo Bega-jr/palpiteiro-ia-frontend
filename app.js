@@ -1,36 +1,33 @@
 const API_BASE = "https://palpiteiro-ia-backend-docker.onrender.com";
-const erroEl = document.getElementById("erro");
-const palpiteEl = document.getElementById("palpite-container");
-const historicoEl = document.getElementById("historico-container");
-const spinnerEl = document.getElementById("spinner");
-const estatisticasBtn = document.getElementById("estatisticas-btn");
-const sorteioInfoEl = document.getElementById("sorteio-info");
-const proximoSorteioEl = document.getElementById("proximo-sorteio");
-const loginBtn = document.getElementById("login-btn");
-const loginOptions = document.getElementById("login-options");
-const apostasLogadoEl = document.getElementById("apostas-logado");
-const apostasBodyEl = document.getElementById("apostas-body");
 
 function showSpinner() {
-  spinnerEl.style.display = "block";
+  const spinnerEl = document.getElementById("spinner");
+  if (spinnerEl) spinnerEl.style.display = "block";
 }
 
 function hideSpinner() {
-  spinnerEl.style.display = "none";
+  const spinnerEl = document.getElementById("spinner");
+  if (spinnerEl) spinnerEl.style.display = "none";
 }
 
 function showError(message) {
   hideSpinner();
-  erroEl.textContent = message;
-  erroEl.style.display = "block";
+  const erroEl = document.getElementById("erro");
+  if (erroEl) {
+    erroEl.textContent = message;
+    erroEl.style.display = "block";
+  }
 }
 
 function fadeIn(element) {
-  element.style.opacity = "1";
-  element.style.transform = "translateY(0)";
+  if (element) {
+    element.style.opacity = "1";
+    element.style.transform = "translateY(0)";
+  }
 }
 
 async function fetchData(url) {
+  console.log("Tentando carregar:", url); // Debug: verificar URL
   showSpinner();
   try {
     const res = await fetch(url);
@@ -49,6 +46,8 @@ async function fetchData(url) {
 }
 
 async function carregarPalpite() {
+  const palpiteEl = document.getElementById("palpite-container");
+  if (!palpiteEl) return;
   try {
     palpiteEl.innerHTML = "";
     const today = new Date();
@@ -75,7 +74,6 @@ async function carregarPalpite() {
     fadeIn(palpiteEl);
   } catch (err) {
     showError("Erro ao carregar a aposta sugerida.");
-    // Fallback manual se a API falhar
     const fallbackAposta = [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25];
     localStorage.setItem("weeklyAposta", JSON.stringify(fallbackAposta));
     fallbackAposta.forEach(num => {
@@ -97,7 +95,6 @@ function renderHistorico(sorteio) {
   const container = document.createElement("div");
   container.className = "historico-container";
 
-  // Resumo do último concurso
   const resumo = document.createElement("div");
   resumo.className = "historico-resumo";
   resumo.innerHTML = `
@@ -119,7 +116,6 @@ function renderHistorico(sorteio) {
   `;
   container.appendChild(resumo);
 
-  // Números e premiação
   const numeros = Array.from({ length: 15 }, (_, i) => sorteio[`bola_${i + 1}`] || '').filter(Boolean);
   const div = document.createElement("div");
   div.className = "palpite";
@@ -129,7 +125,6 @@ function renderHistorico(sorteio) {
   `;
   container.appendChild(div);
 
-  // Tabela de premiação
   const premTable = document.createElement("table");
   premTable.className = "premiacao-table";
   for (let pontos = 15; pontos >= 11; pontos--) {
@@ -149,13 +144,20 @@ function renderHistorico(sorteio) {
 }
 
 async function carregarHistorico() {
+  const historicoEl = document.getElementById("historico-container");
+  const sorteioInfoEl = document.getElementById("sorteio-info");
+  const proximoSorteioEl = document.getElementById("proximo-sorteio");
+  if (!historicoEl || !sorteioInfoEl || !proximoSorteioEl) {
+    console.error("Elementos do histórico não encontrados:", { historicoEl, sorteioInfoEl, proximoSorteioEl });
+    return;
+  }
+
   try {
     const data = await fetchData(`${API_BASE}/historico`);
     console.log('Dados da API:', data); // Debug: verifique a estrutura retornada
     const sorteios = data.sorteios.reverse();
-    const s = sorteios[0] || {}; // Garante que s não seja undefined
+    const s = sorteios[0] || {};
 
-    // Verifica se os campos existem
     const proximoData = s.dataProximoConcurso || 'Data não informada';
     const proximoLocal = s.local || 'Local não informado';
     const proximoValor = s.valorEstimadoProximoConcurso || '0,00';
@@ -168,7 +170,7 @@ async function carregarHistorico() {
     fadeIn(sorteioInfoEl);
     fadeIn(proximoSorteioEl);
   } catch (err) {
-    console.error('Erro ao carregar histórico:', err); // Debug: veja o erro exato
+    console.error('Erro ao carregar histórico:', err);
     showError("Erro ao carregar o histórico. Usando dados de exemplo.");
     const s = {
       Concurso: "3436", Data: "07/07/2025", Local: "SÃO PAULO, SP",
@@ -194,20 +196,23 @@ async function carregarHistorico() {
 }
 
 function adicionarApostaLogado(concurso, numeros, acertos = "Concurso ainda não apurado") {
-  const row = document.createElement("tr");
-  row.innerHTML = `
-    <td>${concurso}</td>
-    <td>${numeros.join(", ")}</td>
-    <td>${acertos}</td>
-  `;
-  apostasBodyEl.appendChild(row);
+  const apostasBodyEl = document.getElementById("apostas-body");
+  if (apostasBodyEl) {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${concurso}</td>
+      <td>${numeros.join(", ")}</td>
+      <td>${acertos}</td>
+    `;
+    apostasBodyEl.appendChild(row);
+  }
 }
 
 async function iniciar() {
   try {
     await Promise.all([carregarPalpite(), carregarHistorico()]);
-    // Simula apostas logadas (a ser integrado com backend)
-    if (false) { // Substituir por lógica de autenticação
+    const apostasLogadoEl = document.getElementById("apostas-logado");
+    if (false && apostasLogadoEl) { // Substituir por lógica de autenticação
       apostasLogadoEl.style.display = "block";
       adicionarApostaLogado("3437", [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25]);
       adicionarApostaLogado("3436", [2, 5, 8, 10, 13, 16, 18, 20, 22, 1, 3, 4, 15], "5 acertos");
@@ -218,19 +223,27 @@ async function iniciar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  estatisticasBtn.addEventListener("click", () => {
-    alert("Funcionalidade de estatísticas em desenvolvimento!");
-  });
-  loginBtn.addEventListener("click", () => {
-    loginOptions.style.display = loginOptions.style.display === "none" ? "block" : "none";
-  });
-  document.getElementById("login-google").addEventListener("click", () => {
-    loginOptions.style.display = "none";
-    alert("Login com Google em desenvolvimento!");
-  });
-  document.getElementById("login-email").addEventListener("click", () => {
-    loginOptions.style.display = "none";
-    alert("Login com E-mail em desenvolvimento!");
-  });
+  const estatisticasBtn = document.getElementById("estatisticas-btn");
+  const loginBtn = document.getElementById("login-btn");
+  const loginOptions = document.getElementById("login-options");
+
+  if (estatisticasBtn) {
+    estatisticasBtn.addEventListener("click", () => {
+      alert("Funcionalidade de estatísticas em desenvolvimento!");
+    });
+  }
+  if (loginBtn && loginOptions) {
+    loginBtn.addEventListener("click", () => {
+      loginOptions.style.display = loginOptions.style.display === "none" ? "block" : "none";
+    });
+    document.getElementById("login-google").addEventListener("click", () => {
+      loginOptions.style.display = "none";
+      alert("Login com Google em desenvolvimento!");
+    });
+    document.getElementById("login-email").addEventListener("click", () => {
+      loginOptions.style.display = "none";
+      alert("Login com E-mail em desenvolvimento!");
+    });
+  }
   iniciar();
 });
