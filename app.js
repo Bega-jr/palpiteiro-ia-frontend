@@ -11,9 +11,6 @@ const loginOptions = document.getElementById("login-options");
 const apostasLogadoEl = document.getElementById("apostas-logado");
 const apostasBodyEl = document.getElementById("apostas-body");
 
-// Números consistentes baseados no histórico
-const FIXED_NUMBERS = [1, 3, 4, 15, 21, 23];
-
 function showSpinner() {
   spinnerEl.style.display = "block";
 }
@@ -105,16 +102,16 @@ function renderHistorico(sorteio) {
   resumo.className = "historico-resumo";
   resumo.innerHTML = `
     <div class="historico-resumo-item">
-      <span>🏆 Concurso</span><br><strong>${sorteio.Concurso}</strong>
+      <span>🏆 Concurso</span><br><strong>${sorteio.Concurso || 'Não informado'}</strong>
     </div>
     <div class="historico-resumo-item">
-      <span>📅 Data</span><br><strong>${sorteio.Data}</strong>
+      <span>📅 Data</span><br><strong>${sorteio.Data || 'Não informada'}</strong>
     </div>
     <div class="historico-resumo-item">
       <span>📍 Local</span><br><strong>${sorteio.Local || 'Não informado'}</strong>
     </div>
     <div class="historico-resumo-item">
-      <span>💰 Valor Pago</span><br><strong>R$ ${sorteio.ValorPremio15 + sorteio.ValorPremio14 + sorteio.ValorPremio13 + sorteio.ValorPremio12 + sorteio.ValorPremio11 || 'Não informado'}</strong>
+      <span>💰 Valor Pago</span><br><strong>R$ ${(sorteio.ValorPremio15 + sorteio.ValorPremio14 + sorteio.ValorPremio13 + sorteio.ValorPremio12 + sorteio.ValorPremio11 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'Não informado'}</strong>
     </div>
     <div class="historico-resumo-item">
       <span>👥 Ganhadores</span><br><strong>${(sorteio.Ganhadores15 || 0) + (sorteio.Ganhadores14 || 0) + (sorteio.Ganhadores13 || 0) + (sorteio.Ganhadores12 || 0) + (sorteio.Ganhadores11 || 0)}</strong>
@@ -127,7 +124,7 @@ function renderHistorico(sorteio) {
   const div = document.createElement("div");
   div.className = "palpite";
   div.innerHTML = `
-    <p class="text-sm mt-2"><strong>Números:</strong> ${numeros.join(", ")}</p>
+    <p class="text-sm mt-2"><strong>Números:</strong> ${numeros.join(", ") || 'Não informados'}</p>
     <p class="text-sm"><strong>Ordem Sorteio:</strong> <span class='text-gray-600 italic'>${sorteio.OrdemSorteio || 'não informada'}</span></p>
   `;
   container.appendChild(div);
@@ -154,18 +151,24 @@ function renderHistorico(sorteio) {
 async function carregarHistorico() {
   try {
     const data = await fetchData(`${API_BASE}/historico`);
+    console.log('Dados da API:', data); // Debug: verifique a estrutura retornada
     const sorteios = data.sorteios.reverse();
-    const s = sorteios[0];
-    const proximo = data.sorteios[1] || {}; // Simula próximo sorteio (a ser ajustado com API)
+    const s = sorteios[0] || {}; // Garante que s não seja undefined
+
+    // Verifica se os campos existem
+    const proximoData = s.dataProximoConcurso || 'Data não informada';
+    const proximoLocal = s.local || 'Local não informado';
+    const proximoValor = s.valorEstimadoProximoConcurso || '0,00';
 
     historicoEl.innerHTML = "";
     historicoEl.appendChild(renderHistorico(s));
-    sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
-    proximoSorteioEl.textContent = `Próximo sorteio: ${proximo.data || 'Data não informada'} - ${proximo.local || 'Local não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'}`;
+    sorteioInfoEl.textContent = `Último sorteio: ${s.Data || 'Não informada'} - ${s.Local || 'Não informado'}`;
+    proximoSorteioEl.textContent = `Próximo sorteio: ${proximoData} - ${proximoLocal} - Est. R$ ${proximoValor}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
     fadeIn(proximoSorteioEl);
   } catch (err) {
+    console.error('Erro ao carregar histórico:', err); // Debug: veja o erro exato
     showError("Erro ao carregar o histórico. Usando dados de exemplo.");
     const s = {
       Concurso: "3436", Data: "07/07/2025", Local: "SÃO PAULO, SP",
@@ -177,13 +180,13 @@ async function carregarHistorico() {
       Ganhadores14: 248, ValorPremio14: 2181.72,
       Ganhadores13: 9800, ValorPremio13: 30.0,
       Ganhadores12: 111936, ValorPremio12: 12.0,
-      Ganhadores11: 627357, ValorPremio11: 6.0
+      Ganhadores11: 627357, ValorPremio11: 6.0,
+      dataProximoConcurso: "12/07/2025", valorEstimadoProximoConcurso: "2.000.000,00", local: "RIO DE JANEIRO, RJ"
     };
-    const proximo = { data: "12/07/2025", local: "RIO DE JANEIRO, RJ", valorEstimadoProximoConcurso: "2.000.000,00" };
     historicoEl.innerHTML = "";
     historicoEl.appendChild(renderHistorico(s));
     sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
-    proximoSorteioEl.textContent = `Próximo sorteio: ${proximo.data || 'Data não informada'} - ${proximo.local || 'Local não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'}`;
+    proximoSorteioEl.textContent = `Próximo sorteio: ${s.dataProximoConcurso} - ${s.local} - Est. R$ ${s.valorEstimadoProximoConcurso}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
     fadeIn(proximoSorteioEl);
