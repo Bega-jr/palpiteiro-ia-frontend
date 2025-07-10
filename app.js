@@ -44,22 +44,47 @@ async function fetchData(url) {
   }
 }
 
-async function carregarPalpite() {
+async function carregarPalpite(premium = false) {
   try {
     palpiteEl.innerHTML = "";
-    const data = await fetchData(`${API_BASE}/gerar_palpites`);
-    const aposta = data.palpites[0] || [];
-    aposta.forEach(num => {
-      const span = document.createElement("span");
-      span.textContent = num.toString().padStart(2, '0');
-      span.className = "palpite-span";
-      span.style.display = "inline-block";
-      span.style.width = "40px";
-      span.style.height = "40px";
-      span.style.lineHeight = "40px";
-      span.style.textAlign = "center";
-      palpiteEl.appendChild(span);
-    });
+    let data;
+    if (premium) {
+      data = await fetchData(`${API_BASE}/gerar_palpites?premium=true`);
+      data.palpites.forEach((aposta, index) => {
+        const subContainer = document.createElement("div");
+        subContainer.className = "palpite-subcontainer";
+        aposta.forEach(num => {
+          const span = document.createElement("span");
+          span.textContent = num.toString().padStart(2, '0');
+          span.className = "palpite-span";
+          span.style.display = "inline-block";
+          span.style.width = "40px";
+          span.style.height = "40px";
+          span.style.lineHeight = "40px";
+          span.style.textAlign = "center";
+          subContainer.appendChild(span);
+        });
+        const title = document.createElement("h4");
+        title.textContent = `Aposta ${index + 1}`;
+        title.className = "text-blue-700 font-semibold mt-2";
+        palpiteEl.appendChild(title);
+        palpiteEl.appendChild(subContainer);
+      });
+    } else {
+      data = await fetchData(`${API_BASE}/gerar_palpites?fixed=true`);
+      const aposta = data.palpites[0] || [];
+      aposta.forEach(num => {
+        const span = document.createElement("span");
+        span.textContent = num.toString().padStart(2, '0');
+        span.className = "palpite-span";
+        span.style.display = "inline-block";
+        span.style.width = "40px";
+        span.style.height = "40px";
+        span.style.lineHeight = "40px";
+        span.style.textAlign = "center";
+        palpiteEl.appendChild(span);
+      });
+    }
     fadeIn(palpiteEl);
   } catch (err) {
     showError("Erro ao carregar a aposta sugerida.");
@@ -159,7 +184,9 @@ async function carregarHistorico() {
 
 async function iniciar() {
   try {
-    await Promise.all([carregarPalpite(), carregarHistorico()]);
+    // Simula verificação de status premium (a ser implementada no backend)
+    const isPremium = false; // Substituir por lógica de autenticação real
+    await Promise.all([carregarPalpite(isPremium), carregarHistorico()]);
   } catch (err) {
     showError("Erro ao iniciar o aplicativo.");
   }
@@ -169,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let debounceTimeout;
   novaBtn.addEventListener("click", () => {
     clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(carregarPalpite, 500);
+    debounceTimeout = setTimeout(() => carregarPalpite(false), 500); // Usuários não premium por padrão
   });
   estatisticasBtn.addEventListener("click", () => {
     alert("Funcionalidade de estatísticas em desenvolvimento!");
