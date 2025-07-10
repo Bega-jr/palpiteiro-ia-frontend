@@ -130,6 +130,27 @@ h2 {
   margin-top: 10px;
 }
 
+.historico-resumo {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.historico-resumo-item {
+  background: #e3f2fd;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  min-width: 120px;
+  margin: 5px;
+}
+
+.historico-resumo-item strong {
+  color: #0d47a1;
+  font-size: 1.1em;
+}
+
 .nova-aposta {
   display: block;
   margin: 15px auto 0;
@@ -170,6 +191,7 @@ h2 {
   padding: 8px;
   border: 1px solid #ddd;
   text-align: center;
+  font-size: 0.9em;
 }
 
 .premiacao-table td:first-child {
@@ -225,6 +247,14 @@ h2 {
     width: 30px;
     height: 30px;
     font-size: 0.9em;
+  }
+  .historico-resumo {
+    flex-direction: column;
+    align-items: center;
+  }
+  .historico-resumo-item {
+    width: 100%;
+    margin: 5px 0;
   }
   .premiacao-table td {
     padding: 5px;
