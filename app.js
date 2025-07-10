@@ -3,7 +3,6 @@ const erroEl = document.getElementById("erro");
 const palpiteEl = document.getElementById("palpite-container");
 const historicoEl = document.getElementById("historico-container");
 const spinnerEl = document.getElementById("spinner");
-const novaBtn = document.getElementById("nova-aposta");
 const estatisticasBtn = document.getElementById("estatisticas-btn");
 const sorteioInfoEl = document.getElementById("sorteio-info");
 const proximoSorteioEl = document.getElementById("proximo-sorteio");
@@ -11,6 +10,9 @@ const loginBtn = document.getElementById("login-btn");
 const loginOptions = document.getElementById("login-options");
 const apostasLogadoEl = document.getElementById("apostas-logado");
 const apostasBodyEl = document.getElementById("apostas-body");
+
+// Números consistentes baseados no histórico
+const FIXED_NUMBERS = [1, 3, 4, 15, 21, 23];
 
 function showSpinner() {
   spinnerEl.style.display = "block";
@@ -52,8 +54,16 @@ async function fetchData(url) {
 async function carregarPalpite() {
   try {
     palpiteEl.innerHTML = "";
-    const data = await fetchData(`${API_BASE}/gerar_palpites?fixed=true`);
-    const aposta = data.palpites[0] || [];
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    let aposta = JSON.parse(localStorage.getItem("weeklyAposta")) || null;
+
+    if (!aposta || dayOfWeek === 0) { // Atualiza só aos domingos ou se não houver aposta
+      const data = await fetchData(`${API_BASE}/gerar_palpites?fixed=true`);
+      aposta = data.palpites[0] || [];
+      localStorage.setItem("weeklyAposta", JSON.stringify(aposta));
+    }
+
     aposta.forEach(num => {
       const span = document.createElement("span");
       span.textContent = num.toString().padStart(2, '0');
@@ -68,6 +78,21 @@ async function carregarPalpite() {
     fadeIn(palpiteEl);
   } catch (err) {
     showError("Erro ao carregar a aposta sugerida.");
+    // Fallback manual se a API falhar
+    const fallbackAposta = [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25];
+    localStorage.setItem("weeklyAposta", JSON.stringify(fallbackAposta));
+    fallbackAposta.forEach(num => {
+      const span = document.createElement("span");
+      span.textContent = num.toString().padStart(2, '0');
+      span.className = "palpite-span";
+      span.style.display = "inline-block";
+      span.style.width = "40px";
+      span.style.height = "40px";
+      span.style.lineHeight = "40px";
+      span.style.textAlign = "center";
+      palpiteEl.appendChild(span);
+    });
+    fadeIn(palpiteEl);
   }
 }
 
@@ -193,11 +218,6 @@ async function iniciar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  let debounceTimeout;
-  novaBtn.addEventListener("click", () => {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => carregarPalpite(), 500);
-  });
   estatisticasBtn.addEventListener("click", () => {
     alert("Funcionalidade de estatísticas em desenvolvimento!");
   });
