@@ -147,8 +147,11 @@ async function carregarHistorico() {
   const historicoEl = document.getElementById("historico-container");
   const sorteioInfoEl = document.getElementById("sorteio-info");
   const proximoSorteioEl = document.getElementById("proximo-sorteio");
+  console.log("Elementos do histórico:", { historicoEl, sorteioInfoEl, proximoSorteioEl }); // Debug
+
   if (!historicoEl || !sorteioInfoEl || !proximoSorteioEl) {
     console.error("Elementos do histórico não encontrados:", { historicoEl, sorteioInfoEl, proximoSorteioEl });
+    showError("Elementos do histórico não encontrados. Verifique o HTML.");
     return;
   }
 
