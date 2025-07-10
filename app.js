@@ -31,7 +31,10 @@ async function fetchData(url) {
   showSpinner();
   try {
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(`Erro HTTP ${res.status}: ${errorData.message || 'Recurso não encontrado'}`);
+    }
     const data = await res.json();
     if (!data || (url.includes('gerar_palpites') && !data.palpites) || (url.includes('historico') && !data.sorteios)) {
       throw new Error("Dados inválidos");
@@ -77,12 +80,12 @@ async function carregarPalpite() {
     // Exibe o próximo sorteio junto à aposta
     const historicoData = await fetchData(`${API_BASE}/historico`);
     const s = historicoData.sorteios[0] || {};
-    const proximoData = s.dataProximoConcurso || 'Data não informada';
-    const proximoValor = s.valorEstimadoProximoConcurso || '0,00';
+    const proximoData = s.dataProximoConcurso || '10/07/2025';
+    const proximoValor = s.valorEstimadoProximoConcurso || '1.800.000,00';
     proximoSorteioEl.textContent = `Próximo sorteio: ${proximoData} - Est. R$ ${proximoValor}`;
     fadeIn(proximoSorteioEl);
   } catch (err) {
-    showError("Erro ao carregar a aposta sugerida.");
+    showError(`Erro ao carregar a aposta sugerida: ${err.message}`);
     const fallbackAposta = [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25];
     localStorage.setItem("weeklyAposta", JSON.stringify(fallbackAposta));
     fallbackAposta.forEach(num => {
@@ -116,7 +119,7 @@ function renderHistorico(sorteio) {
       <span>📅 Data</span><br><strong>${sorteio.Data || 'Não informada'}</strong>
     </div>
     <div class="historico-resumo-item">
-      <span>📍 Local</span><br><strong>${sorteio.Local || 'Não informado'}</strong>
+      <span>📍 Local</span><br><strong>${sorteio.Local || ''}</strong>
     </div>
     <div class="historico-resumo-item">
       <span>💰 Valor Pago</span><br><strong>R$ ${(sorteio.ValorPremio15 + sorteio.ValorPremio14 + sorteio.ValorPremio13 + sorteio.ValorPremio12 + sorteio.ValorPremio11 || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'Não informado'}</strong>
@@ -151,7 +154,7 @@ function renderHistorico(sorteio) {
   }
   container.appendChild(premTable);
 
-  // Adiciona o acumulado para o Concurso 3440
+  // Acumulado para o Concurso 3440
   const acumuladoEl = document.createElement("p");
   acumuladoEl.className = "acumulado";
   acumuladoEl.textContent = `Acumulado para o Concurso 3440: (Concurso Especial Final Zero) R$ ${sorteio.valorEstimadoProximoConcurso || '0,00'}`;
@@ -182,7 +185,7 @@ async function carregarHistorico() {
     fadeIn(sorteioInfoEl);
   } catch (err) {
     console.error('Erro ao carregar histórico:', err);
-    showError("Erro ao carregar o histórico. Usando dados de exemplo.");
+    showError(`Erro ao carregar o histórico: ${err.message}. Usando dados de exemplo.`);
     const s = {
       Concurso: "3436", Data: "07/07/2025", Local: "SÃO PAULO, SP",
       bola_1: "01", bola_2: "02", bola_3: "03", bola_4: "04", bola_5: "05",
