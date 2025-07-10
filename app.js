@@ -6,6 +6,9 @@ const spinnerEl = document.getElementById("spinner");
 const novaBtn = document.getElementById("nova-aposta");
 const estatisticasBtn = document.getElementById("estatisticas-btn");
 const sorteioInfoEl = document.getElementById("sorteio-info");
+const proximoSorteioEl = document.getElementById("proximo-sorteio");
+const apostasLogadoEl = document.getElementById("apostas-logado");
+const apostasBodyEl = document.getElementById("apostas-body");
 
 function showSpinner() {
   spinnerEl.style.display = "block";
@@ -44,47 +47,22 @@ async function fetchData(url) {
   }
 }
 
-async function carregarPalpite(premium = false) {
+async function carregarPalpite() {
   try {
     palpiteEl.innerHTML = "";
-    let data;
-    if (premium) {
-      data = await fetchData(`${API_BASE}/gerar_palpites?premium=true`);
-      data.palpites.forEach((aposta, index) => {
-        const subContainer = document.createElement("div");
-        subContainer.className = "palpite-subcontainer";
-        aposta.forEach(num => {
-          const span = document.createElement("span");
-          span.textContent = num.toString().padStart(2, '0');
-          span.className = "palpite-span";
-          span.style.display = "inline-block";
-          span.style.width = "40px";
-          span.style.height = "40px";
-          span.style.lineHeight = "40px";
-          span.style.textAlign = "center";
-          subContainer.appendChild(span);
-        });
-        const title = document.createElement("h4");
-        title.textContent = `Aposta ${index + 1}`;
-        title.className = "text-blue-700 font-semibold mt-2";
-        palpiteEl.appendChild(title);
-        palpiteEl.appendChild(subContainer);
-      });
-    } else {
-      data = await fetchData(`${API_BASE}/gerar_palpites?fixed=true`);
-      const aposta = data.palpites[0] || [];
-      aposta.forEach(num => {
-        const span = document.createElement("span");
-        span.textContent = num.toString().padStart(2, '0');
-        span.className = "palpite-span";
-        span.style.display = "inline-block";
-        span.style.width = "40px";
-        span.style.height = "40px";
-        span.style.lineHeight = "40px";
-        span.style.textAlign = "center";
-        palpiteEl.appendChild(span);
-      });
-    }
+    const data = await fetchData(`${API_BASE}/gerar_palpites?fixed=true`);
+    const aposta = data.palpites[0] || [];
+    aposta.forEach(num => {
+      const span = document.createElement("span");
+      span.textContent = num.toString().padStart(2, '0');
+      span.className = "palpite-span";
+      span.style.display = "inline-block";
+      span.style.width = "40px";
+      span.style.height = "40px";
+      span.style.lineHeight = "40px";
+      span.style.textAlign = "center";
+      palpiteEl.appendChild(span);
+    });
     fadeIn(palpiteEl);
   } catch (err) {
     showError("Erro ao carregar a aposta sugerida.");
@@ -121,6 +99,7 @@ async function carregarHistorico() {
     const data = await fetchData(`${API_BASE}/historico`);
     const sorteios = data.sorteios.reverse();
     const s = sorteios[0];
+    const proximo = data.sorteios[1] || {}; // Simula próximo sorteio (a ser ajustado com API)
 
     const numeros = Array.from({ length: 15 }, (_, i) => s[`bola_${i + 1}`] || '').filter(Boolean);
     const div = document.createElement("div");
@@ -136,14 +115,16 @@ async function carregarHistorico() {
     extraInfo.className = "extra-info";
     extraInfo.innerHTML = `
       <p><strong>Arrecadação:</strong> R$ ${s.valorArrecadado || 'Não informado'}</p>
-      <p><strong>Próximo Concurso:</strong> ${s.dataProximoConcurso || 'Não informado'} - Est. R$ ${s.valorEstimadoProximoConcurso || '0,00'}</p>
+      <p><strong>Próximo Concurso:</strong> ${proximo.dataProximoConcurso || 'Não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'} (${proximo.data || 'Data não informada'} em ${proximo.local || 'Local não informado'})</p>
     `;
     div.appendChild(extraInfo);
     historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
     sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
+    proximoSorteioEl.textContent = `Próximo sorteio: ${proximo.data || 'Data não informada'} - ${proximo.local || 'Local não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
+    fadeIn(proximoSorteioEl);
   } catch (err) {
     showError("Erro ao carregar o histórico. Usando dados de exemplo.");
     const s = {
@@ -158,6 +139,7 @@ async function carregarHistorico() {
       Ganhadores12: 111936, ValorPremio12: 12.0,
       Ganhadores11: 627357, ValorPremio11: 6.0
     };
+    const proximo = { data: "12/07/2025", local: "RIO DE JANEIRO, RJ", valorEstimadoProximoConcurso: "2.000.000,00" };
     const div = document.createElement("div");
     div.className = "palpite";
     div.innerHTML = `
@@ -171,22 +153,38 @@ async function carregarHistorico() {
     extraInfo.className = "extra-info";
     extraInfo.innerHTML = `
       <p><strong>Arrecadação:</strong> R$ ${s.valorArrecadado || 'Não informado'}</p>
-      <p><strong>Próximo Concurso:</strong> ${s.dataProximoConcurso || 'Não informado'} - Est. R$ ${s.valorEstimadoProximoConcurso || '0,00'}</p>
+      <p><strong>Próximo Concurso:</strong> ${proximo.data || 'Não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'} (${proximo.data || 'Data não informada'} em ${proximo.local || 'Local não informado'})</p>
     `;
     div.appendChild(extraInfo);
     historicoEl.innerHTML = "";
     historicoEl.appendChild(div);
     sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
+    proximoSorteioEl.textContent = `Próximo sorteio: ${proximo.data || 'Data não informada'} - ${proximo.local || 'Local não informado'} - Est. R$ ${proximo.valorEstimadoProximoConcurso || '0,00'}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
+    fadeIn(proximoSorteioEl);
   }
+}
+
+function adicionarApostaLogado(concurso, numeros, acertos = "Concurso ainda não apurado") {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${concurso}</td>
+    <td>${numeros.join(", ")}</td>
+    <td>${acertos}</td>
+  `;
+  apostasBodyEl.appendChild(row);
 }
 
 async function iniciar() {
   try {
-    // Simula verificação de status premium (a ser implementada no backend)
-    const isPremium = false; // Substituir por lógica de autenticação real
-    await Promise.all([carregarPalpite(isPremium), carregarHistorico()]);
+    await Promise.all([carregarPalpite(), carregarHistorico()]);
+    // Simula apostas logadas (a ser integrado com backend)
+    if (false) { // Substituir por lógica de autenticação
+      apostasLogadoEl.style.display = "block";
+      adicionarApostaLogado("3437", [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25]);
+      adicionarApostaLogado("3436", [2, 5, 8, 10, 13, 16, 18, 20, 22, 1, 3, 4, 15], "5 acertos");
+    }
   } catch (err) {
     showError("Erro ao iniciar o aplicativo.");
   }
@@ -196,10 +194,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let debounceTimeout;
   novaBtn.addEventListener("click", () => {
     clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => carregarPalpite(false), 500); // Usuários não premium por padrão
+    debounceTimeout = setTimeout(() => carregarPalpite(), 500);
   });
   estatisticasBtn.addEventListener("click", () => {
     alert("Funcionalidade de estatísticas em desenvolvimento!");
   });
+  document.getElementById("login-google").addEventListener("click", () => alert("Login com Google em desenvolvimento!"));
+  document.getElementById("login-email").addEventListener("click", () => alert("Login com E-mail em desenvolvimento!"));
   iniciar();
 });
