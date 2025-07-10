@@ -47,7 +47,8 @@ async function fetchData(url) {
 
 async function carregarPalpite() {
   const palpiteEl = document.getElementById("palpite-container");
-  if (!palpiteEl) return;
+  const proximoSorteioEl = document.getElementById("proximo-sorteio");
+  if (!palpiteEl || !proximoSorteioEl) return;
   try {
     palpiteEl.innerHTML = "";
     const today = new Date();
@@ -72,6 +73,14 @@ async function carregarPalpite() {
       palpiteEl.appendChild(span);
     });
     fadeIn(palpiteEl);
+
+    // Exibe o próximo sorteio junto à aposta
+    const historicoData = await fetchData(`${API_BASE}/historico`);
+    const s = historicoData.sorteios[0] || {};
+    const proximoData = s.dataProximoConcurso || 'Data não informada';
+    const proximoValor = s.valorEstimadoProximoConcurso || '0,00';
+    proximoSorteioEl.textContent = `Próximo sorteio: ${proximoData} - Est. R$ ${proximoValor}`;
+    fadeIn(proximoSorteioEl);
   } catch (err) {
     showError("Erro ao carregar a aposta sugerida.");
     const fallbackAposta = [1, 3, 4, 7, 9, 12, 15, 17, 19, 21, 23, 24, 25];
@@ -88,6 +97,8 @@ async function carregarPalpite() {
       palpiteEl.appendChild(span);
     });
     fadeIn(palpiteEl);
+    proximoSorteioEl.textContent = `Próximo sorteio: 10/07/2025 - Est. R$ 1.800.000,00`; // Fallback
+    fadeIn(proximoSorteioEl);
   }
 }
 
@@ -140,17 +151,20 @@ function renderHistorico(sorteio) {
   }
   container.appendChild(premTable);
 
+  // Adiciona o acumulado para o Concurso 3440
+  const acumuladoEl = document.createElement("p");
+  acumuladoEl.className = "acumulado";
+  acumuladoEl.textContent = `Acumulado para o Concurso 3440: (Concurso Especial Final Zero) R$ ${sorteio.valorEstimadoProximoConcurso || '0,00'}`;
+  container.appendChild(acumuladoEl);
+
   return container;
 }
 
 async function carregarHistorico() {
   const historicoEl = document.getElementById("historico-container");
   const sorteioInfoEl = document.getElementById("sorteio-info");
-  const proximoSorteioEl = document.getElementById("proximo-sorteio");
-  console.log("Elementos do histórico:", { historicoEl, sorteioInfoEl, proximoSorteioEl }); // Debug
-
-  if (!historicoEl || !sorteioInfoEl || !proximoSorteioEl) {
-    console.error("Elementos do histórico não encontrados:", { historicoEl, sorteioInfoEl, proximoSorteioEl });
+  if (!historicoEl || !sorteioInfoEl) {
+    console.error("Elementos do histórico não encontrados:", { historicoEl, sorteioInfoEl });
     showError("Elementos do histórico não encontrados. Verifique o HTML.");
     return;
   }
@@ -161,17 +175,11 @@ async function carregarHistorico() {
     const sorteios = data.sorteios.reverse();
     const s = sorteios[0] || {};
 
-    const proximoData = s.dataProximoConcurso || 'Data não informada';
-    const proximoLocal = s.local || 'Local não informado';
-    const proximoValor = s.valorEstimadoProximoConcurso || '0,00';
-
     historicoEl.innerHTML = "";
     historicoEl.appendChild(renderHistorico(s));
-    sorteioInfoEl.textContent = `Último sorteio: ${s.Data || 'Não informada'} - ${s.Local || 'Não informado'}`;
-    proximoSorteioEl.textContent = `Próximo sorteio: ${proximoData} - ${proximoLocal} - Est. R$ ${proximoValor}`;
+    sorteioInfoEl.textContent = `Último sorteio: ${s.Data || 'Não informada'} - ${s.Local || ''}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
-    fadeIn(proximoSorteioEl);
   } catch (err) {
     console.error('Erro ao carregar histórico:', err);
     showError("Erro ao carregar o histórico. Usando dados de exemplo.");
@@ -186,15 +194,13 @@ async function carregarHistorico() {
       Ganhadores13: 9800, ValorPremio13: 30.0,
       Ganhadores12: 111936, ValorPremio12: 12.0,
       Ganhadores11: 627357, ValorPremio11: 6.0,
-      dataProximoConcurso: "12/07/2025", valorEstimadoProximoConcurso: "2.000.000,00", local: "RIO DE JANEIRO, RJ"
+      valorEstimadoProximoConcurso: "2.347.791,79"
     };
     historicoEl.innerHTML = "";
     historicoEl.appendChild(renderHistorico(s));
-    sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || 'Não informado'}`;
-    proximoSorteioEl.textContent = `Próximo sorteio: ${s.dataProximoConcurso} - ${s.local} - Est. R$ ${s.valorEstimadoProximoConcurso}`;
+    sorteioInfoEl.textContent = `Último sorteio: ${s.Data} - ${s.Local || ''}`;
     fadeIn(historicoEl);
     fadeIn(sorteioInfoEl);
-    fadeIn(proximoSorteioEl);
   }
 }
 
