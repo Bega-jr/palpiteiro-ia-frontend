@@ -6,12 +6,13 @@ import { getMessaging, onMessage } from 'firebase/messaging';
 
 // Firebase Config (substitua pelos seus dados)
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
+  apiKey: "AIzaSyDIAcBJg1FLwMBAKhAcKePw-bxi1piVlXw",
   authDomain: "palpiteiro-ia.firebaseapp.com",
   projectId: "palpiteiro-ia",
-  storageBucket: "palpiteiro-ia.appspot.com",
-  messagingSenderId: "102550094423467057126",
-  appId: "1:102550094423467057126:web:abc123"
+  storageBucket: "palpiteiro-ia.firebasestorage.app",
+  messagingSenderId: "1063099774350",
+  appId: "1:1063099774350:web:fa22f335a19e885e95a0df",
+  measurementId: "G-RP2ZZKMLPF"
 };
 
 const app = initializeApp(firebaseConfig);
