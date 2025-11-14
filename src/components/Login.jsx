@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '../index';  // Importe do index.js
 
 export default function Login() {
   const [user, setUser] = useState(null);
-  const auth = getAuth();
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    localStorage.setItem('firebaseToken', await result.user.getIdToken());
-    setUser(result.user);
+    try {
+      const result = await signInWithPopup(auth, provider);
+      localStorage.setItem('firebaseToken', await result.user.getIdToken());
+      setUser(result.user);
+    } catch (error) {
+      console.error('Erro no login:', error);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await auth.signOut();
     localStorage.removeItem('firebaseToken');
     setUser(null);
   };
