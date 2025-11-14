@@ -14,7 +14,11 @@ const firebaseConfig = {
   appId: "1:1063099774350:web:fa22f335a19e885e95a0df",
   measurementId: "G-RP2ZZKMLPF"
 };
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);  // Exporte para usar no Login
 
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
