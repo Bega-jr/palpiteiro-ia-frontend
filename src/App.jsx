@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { auth } from "./index"; // se o auth estiver exportado no index.js
+import { auth } from "./index";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe("pk_test_51...SUA_CHAVE_PUBLICA_STRIPE_AQUI"); // Cole sua pk_test
 
 function App() {
   const [user, setUser] = useState(null);
@@ -49,6 +52,23 @@ function App() {
     setLoading(false);
   };
 
+  // BOTÃO PREMIUM COMPLETO
+  const assinarPremium = async () => {
+    setLoading(true);
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(`${API_URL}/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+    const { id } = await res.json();
+    const stripe = await stripePromise;
+    await stripe.redirectToCheckout({ sessionId: id });
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <header className="bg-blue-600 text-white p-6 text-center">
@@ -79,16 +99,23 @@ function App() {
               </div>
               <div className="text-center mt-6 space-x-4">
                 <button onClick={() => gerarPalpite("aleatorio")} className="bg-green-600 text-white px-6 py-3 rounded-lg text-xl">Aleatório</button>
-                <button 
-  onClick={assinarPremium} 
-  className="bg-yellow-500 text-black font-bold text-2xl px-12 py-6 rounded-xl shadow-lg hover:shadow-2xl"
->
-  Assinar Premium R$9,90/mês – 7 palpites/dia
-</button>
                 <button onClick={() => gerarPalpite("premium")} className="bg-yellow-500 text-black px-6 py-3 rounded-lg text-xl">Premium (7)</button>
               </div>
             </section>
 
+            {/* BOTÃO PREMIUM AQUI */}
+            <div className="text-center my-12">
+              <button 
+                onClick={assinarPremium}
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-3xl px-16 py-8 rounded-2xl shadow-2xl hover:scale-105 transition transform"
+              >
+                Assinar Premium R$9,90/mês
+                <br />
+                <span className="text-xl">7 palpites/dia + IA Avançada</span>
+              </button>
+            </div>
+
+            {/* resto do código (histórico e estatísticas) */}
             <section className="mb-10">
               <h2 className="text-3xl font-bold text-blue-800 mb-6">Último Sorteio</h2>
               <button onClick={carregarHistorico} className="bg-purple-600 text-white px-8 py-3 rounded-lg text-xl">Carregar Histórico</button>
@@ -122,7 +149,6 @@ function App() {
         ) : (
           <p className="text-center text-2xl mt-20 text-gray-600">Faça login para começar</p>
         )}
-
         {loading && <p className="text-center text-xl mt-10">Carregando...</p>}
       </main>
 
