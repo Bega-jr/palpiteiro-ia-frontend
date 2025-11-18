@@ -79,6 +79,12 @@ function App() {
               </div>
               <div className="text-center mt-6 space-x-4">
                 <button onClick={() => gerarPalpite("aleatorio")} className="bg-green-600 text-white px-6 py-3 rounded-lg text-xl">Aleatório</button>
+                <button 
+  onClick={assinarPremium} 
+  className="bg-yellow-500 text-black font-bold text-2xl px-12 py-6 rounded-xl shadow-lg hover:shadow-2xl"
+>
+  Assinar Premium R$9,90/mês – 7 palpites/dia
+</button>
                 <button onClick={() => gerarPalpite("premium")} className="bg-yellow-500 text-black px-6 py-3 rounded-lg text-xl">Premium (7)</button>
               </div>
             </section>
