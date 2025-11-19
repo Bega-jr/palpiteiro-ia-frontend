@@ -1,5 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from estatisticas import estatisticas
+app.add_url_rule('/estatisticas', 'estatisticas', estatisticas)
 
 app = Flask(__name__)
 CORS(app)
