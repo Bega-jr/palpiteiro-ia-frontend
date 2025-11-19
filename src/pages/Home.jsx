@@ -8,8 +8,13 @@ export default function Home() {
 
   const gerar = async (tipo) => {
     setLoading(true);
-    const res = await api.get(`/gerar_palpites?tipo=${tipo}`);
-    setPalpite(res.palpites[0]);
+
+    // Novo endpoint correto
+    const res = await api.get(`/gerar-apostas?tipo=${tipo}`);
+
+    // Ajuste conforme retorno do backend
+    setPalpite(res.apostas?.[0] || []);
+
     setLoading(false);
   };
 
