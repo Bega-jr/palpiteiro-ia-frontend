@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../services/api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
@@ -8,13 +8,18 @@ export default function Home() {
 
   const gerar = async (tipo) => {
     setLoading(true);
+    try {
+      const res = await api.get(`/gerar_apostas?tipo=${tipo}`);
 
-    // Novo endpoint correto
-    const res = await api.get(`/gerar-apostas?tipo=${tipo}`);
-
-    // Ajuste conforme retorno do backend
-    setPalpite(res.apostas?.[0] || []);
-
+      if (res.apostas && res.apostas.length > 0) {
+        setPalpite(res.apostas[0]);
+      } else {
+        setPalpite([]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar palpites.");
+    }
     setLoading(false);
   };
 
@@ -22,7 +27,10 @@ export default function Home() {
     <div className="space-y-6">
       <section className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-bold text-blue-800 mb-4">Seu Palpite</h2>
-        {loading ? <LoadingSkeleton /> : (
+
+        {loading ? (
+          <LoadingSkeleton />
+        ) : (
           <div className="flex flex-wrap justify-center gap-2">
             {palpite?.map(n => (
               <span key={n} className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
@@ -31,11 +39,19 @@ export default function Home() {
             ))}
           </div>
         )}
+
         <div className="flex justify-center gap-2 mt-4">
-          <button onClick={() => gerar('aleatorio')} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button
+            onClick={() => gerar('aleatorio')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
             Aleatório
           </button>
-          <button onClick={() => gerar('estatistico')} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+
+          <button
+            onClick={() => gerar('estatistico')}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
             Estatístico
           </button>
         </div>
