@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App';  // ou './App.jsx'
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
