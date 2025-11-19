@@ -3,7 +3,7 @@ import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signO
 import { auth } from "./index";
 import { loadStripe } from "@stripe/stripe-js";
 
-const stripePromise = loadStripe("pk_test_51...SUA_CHAVE_PUBLICA_STRIPE_AQUI"); // Cole sua pk_test
+const stripePromise = loadStripe("pk_test_51...SUA_CHAVE_PUBLICA_STRIPE"); // cole sua pk_test aqui
 
 function App() {
   const [user, setUser] = useState(null);
@@ -52,7 +52,6 @@ function App() {
     setLoading(false);
   };
 
-  // BOTÃO PREMIUM COMPLETO
   const assinarPremium = async () => {
     setLoading(true);
     const token = await auth.currentUser.getIdToken();
@@ -103,19 +102,14 @@ function App() {
               </div>
             </section>
 
-            {/* BOTÃO PREMIUM AQUI */}
             <div className="text-center my-12">
-              <button 
-                onClick={assinarPremium}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-3xl px-16 py-8 rounded-2xl shadow-2xl hover:scale-105 transition transform"
-              >
+              <button onClick={assinarPremium} className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-3xl px-16 py-8 rounded-2xl shadow-2xl hover:scale-105 transition">
                 Assinar Premium R$9,90/mês
                 <br />
                 <span className="text-xl">7 palpites/dia + IA Avançada</span>
               </button>
             </div>
 
-            {/* resto do código (histórico e estatísticas) */}
             <section className="mb-10">
               <h2 className="text-3xl font-bold text-blue-800 mb-6">Último Sorteio</h2>
               <button onClick={carregarHistorico} className="bg-purple-600 text-white px-8 py-3 rounded-lg text-xl">Carregar Histórico</button>
