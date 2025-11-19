@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut
+} from "firebase/auth";
 import { auth } from "./index";
 import { loadStripe } from "@stripe/stripe-js";
 
-const stripePromise = loadStripe("pk_test_51...SUA_CHAVE_PUBLICA_STRIPE"); // cole sua pk_test aqui
+const stripePromise = loadStripe("pk_test_51...SUA_CHAVE_PUBLICA_STRIPE");
 
 function App() {
   const [user, setUser] = useState(null);
@@ -12,7 +18,9 @@ function App() {
   const [estatisticas, setEstatisticas] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.REACT_APP_API_URL;
+  const API_URL =
+    process.env.REACT_APP_API_URL ||
+    "https://palpiteiro-ia-backend-docker.onrender.com";
 
   useEffect(() => {
     onAuthStateChanged(auth, setUser);
@@ -26,46 +34,65 @@ function App() {
   const logout = () => signOut(auth);
 
   const gerarPalpite = async (tipo = "aleatorio") => {
-    setLoading(true);
-    const token = await auth.currentUser.getIdToken();
-    const res = await fetch(`${API_URL}/gerar_palpites?tipo=${tipo}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    setPalpite(data.palpites[0] || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      if (!auth.currentUser) return;
+
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${API_URL}/gerar_palpites?tipo=${tipo}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      setPalpite(data.palpites?.[0] || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const carregarHistorico = async () => {
-    setLoading(true);
-    const res = await fetch(`${API_URL}/historico`);
-    const data = await res.json();
-    setHistorico(data.sorteios || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/historico`);
+      const data = await res.json();
+      setHistorico(data.sorteios || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const carregarEstatisticas = async () => {
-    setLoading(true);
-    const res = await fetch(`${API_URL}/estatisticas`);
-    const data = await res.json();
-    setEstatisticas(data);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/estatisticas`);
+      const data = await res.json();
+      setEstatisticas(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const assinarPremium = async () => {
-    setLoading(true);
-    const token = await auth.currentUser.getIdToken();
-    const res = await fetch(`${API_URL}/create-checkout-session`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    });
-    const { id } = await res.json();
-    const stripe = await stripePromise;
-    await stripe.redirectToCheckout({ sessionId: id });
-    setLoading(false);
+    try {
+      setLoading(true);
+      if (!auth.currentUser) return;
+
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${API_URL}/create-checkout-session`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      const { id } = await res.json();
+      const stripe = await stripePromise;
+
+      await stripe.redirectToCheckout({ sessionId: id });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,10 +102,15 @@ function App() {
         {user ? (
           <div className="mt-4">
             <span className="mr-4">Olá, {user.displayName}</span>
-            <button onClick={logout} className="bg-red-500 px-4 py-2 rounded">Sair</button>
+            <button onClick={logout} className="bg-red-500 px-4 py-2 rounded">
+              Sair
+            </button>
           </div>
         ) : (
-          <button onClick={login} className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold text-xl mt-4">
+          <button
+            onClick={login}
+            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold text-xl mt-4"
+          >
             Login com Google
           </button>
         )}
@@ -88,38 +120,83 @@ function App() {
         {user ? (
           <>
             <section className="mb-10">
-              <h2 className="text-3xl font-bold text-blue-800 mb-6">Aposta Sugerida</h2>
+              <h2 className="text-3xl font-bold text-blue-800 mb-6">
+                Aposta Sugerida
+              </h2>
+
               <div className="flex justify-center gap-4 flex-wrap">
-                {palpite.length > 0 ? palpite.map(n => (
-                  <div key={n} className="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold">
-                    {n.toString().padStart(2, "0")}
-                  </div>
-                )) : <p className="text-gray-600">Clique em um botão para gerar seu palpite</p>}
+                {palpite.length > 0 ? (
+                  palpite.map((n) => (
+                    <div
+                      key={n}
+                      className="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold"
+                    >
+                      {n.toString().padStart(2, "0")}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-600">
+                    Clique em um botão para gerar seu palpite
+                  </p>
+                )}
               </div>
+
               <div className="text-center mt-6 space-x-4">
-                <button onClick={() => gerarPalpite("aleatorio")} className="bg-green-600 text-white px-6 py-3 rounded-lg text-xl">Aleatório</button>
-                <button onClick={() => gerarPalpite("premium")} className="bg-yellow-500 text-black px-6 py-3 rounded-lg text-xl">Premium (7)</button>
+                <button
+                  onClick={() => gerarPalpite("aleatorio")}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg text-xl"
+                >
+                  Aleatório
+                </button>
+
+                <button
+                  onClick={() => gerarPalpite("premium")}
+                  className="bg-yellow-500 text-black px-6 py-3 rounded-lg text-xl"
+                >
+                  Premium (7)
+                </button>
               </div>
             </section>
 
             <div className="text-center my-12">
-              <button onClick={assinarPremium} className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-3xl px-16 py-8 rounded-2xl shadow-2xl hover:scale-105 transition">
+              <button
+                onClick={assinarPremium}
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold text-3xl px-16 py-8 rounded-2xl shadow-2xl hover:scale-105 transition"
+              >
                 Assinar Premium R$9,90/mês
                 <br />
-                <span className="text-xl">7 palpites/dia + IA Avançada</span>
+                <span className="text-xl">
+                  7 palpites/dia + IA Avançada
+                </span>
               </button>
             </div>
 
             <section className="mb-10">
-              <h2 className="text-3xl font-bold text-blue-800 mb-6">Último Sorteio</h2>
-              <button onClick={carregarHistorico} className="bg-purple-600 text-white px-8 py-3 rounded-lg text-xl">Carregar Histórico</button>
+              <h2 className="text-3xl font-bold text-blue-800 mb-6">
+                Último Sorteio
+              </h2>
+              <button
+                onClick={carregarHistorico}
+                className="bg-purple-600 text-white px-8 py-3 rounded-lg text-xl"
+              >
+                Carregar Histórico
+              </button>
+
               {historico.length > 0 && (
                 <div className="mt-6 bg-white p-6 rounded-lg shadow">
-                  <p className="text-xl"><strong>Concurso:</strong> {historico[0].concurso}</p>
-                  <p className="text-xl"><strong>Data:</strong> {historico[0].data}</p>
+                  <p className="text-xl">
+                    <strong>Concurso:</strong> {historico[0].concurso}
+                  </p>
+                  <p className="text-xl">
+                    <strong>Data:</strong> {historico[0].data}
+                  </p>
+
                   <div className="flex justify-center gap-4 flex-wrap mt-4">
-                    {historico[0].numeros?.map(n => (
-                      <div key={n} className="bg-gray-800 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold">
+                    {historico[0].numeros?.map((n) => (
+                      <div
+                        key={n}
+                        className="bg-gray-800 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold"
+                      >
                         {n.toString().padStart(2, "0")}
                       </div>
                     ))}
@@ -129,21 +206,46 @@ function App() {
             </section>
 
             <section>
-              <h2 className="text-3xl font-bold text-blue-800 mb-6">Estatísticas</h2>
-              <button onClick={carregarEstatisticas} className="bg-indigo-600 text-white px-8 py-3 rounded-lg text-xl">Ver Estatísticas</button>
+              <h2 className="text-3xl font-bold text-blue-800 mb-6">
+                Estatísticas
+              </h2>
+              <button
+                onClick={carregarEstatisticas}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-lg text-xl"
+              >
+                Ver Estatísticas
+              </button>
+
               {estatisticas && (
                 <div className="mt-6 bg-white p-6 rounded-lg shadow text-left">
-                  <p><strong>Mais Frequentes:</strong> {estatisticas.mais_frequentes.map(i => i[0]).join(", ")}</p>
-                  <p><strong>Menos Frequentes:</strong> {estatisticas.menos_frequentes.map(i => i[0]).join(", ")}</p>
-                  <p><strong>Média da Soma:</strong> {estatisticas.media_soma}</p>
+                  <p>
+                    <strong>Mais Frequentes:</strong>{" "}
+                    {estatisticas.mais_frequentes
+                      .map((i) => i[0])
+                      .join(", ")}
+                  </p>
+                  <p>
+                    <strong>Menos Frequentes:</strong>{" "}
+                    {estatisticas.menos_frequentes
+                      .map((i) => i[0])
+                      .join(", ")}
+                  </p>
+                  <p>
+                    <strong>Média da Soma:</strong> {estatisticas.media_soma}
+                  </p>
                 </div>
               )}
             </section>
           </>
         ) : (
-          <p className="text-center text-2xl mt-20 text-gray-600">Faça login para começar</p>
+          <p className="text-center text-2xl mt-20 text-gray-600">
+            Faça login para começar
+          </p>
         )}
-        {loading && <p className="text-center text-xl mt-10">Carregando...</p>}
+
+        {loading && (
+          <p className="text-center text-xl mt-10">Carregando...</p>
+        )}
       </main>
 
       <footer className="text-center py-8 text-gray-600">
