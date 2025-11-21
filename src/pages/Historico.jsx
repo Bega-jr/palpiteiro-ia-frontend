@@ -1,69 +1,56 @@
-import { useEffect, useState } from 'react';
-import api from '../services/api';
-import LoadingSkeleton from '../components/LoadingSkeleton';
-import MainLayout from '../layouts/MainLayout';
+import React, { useState } from "react";
+import NumeroBolinha from "../components/NumeroBolinha";
 
-export default function Historico() {
-  const [historico, setHistorico] = useState(null);
-  const [loading, setLoading] = useState(true);
+function Historico({ API_URL }) {
+  const [historico, setHistorico] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
+  const carregarHistorico = async () => {
+    try {
       setLoading(true);
-      try {
-        // backend may not have explicit /historico; if not, fallback to /estatisticas for data
-        const res = await api.get('/historico').catch(() => api.get('/estatisticas'));
-        setHistorico(res);
-      } catch (e) {
-        console.error(e);
-        setHistorico({ error: 'Não foi possível carregar histórico' });
-      }
+      const res = await fetch(`${API_URL}/historico`);
+      const data = await res.json();
+      setHistorico(data.sorteios || []);
+    } finally {
       setLoading(false);
-    };
-    load();
-  }, []);
+    }
+  };
 
   return (
-    <MainLayout>
-      <div className="container space-y-6">
-        <h1 className="text-2xl font-bold text-blue-800">Histórico de Concursos</h1>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-blue-800 mb-6">Últimos Sorteios</h1>
 
-        {loading && <LoadingSkeleton />}
+      <button
+        onClick={carregarHistorico}
+        className="bg-purple-600 text-white px-8 py-3 rounded-lg text-xl"
+      >
+        Carregar Histórico
+      </button>
 
-        {!loading && historico?.error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-800">
-            {historico.error}
-          </div>
-        )}
+      {loading && <p className="mt-6 text-xl">Carregando...</p>}
 
-        {!loading && !historico?.error && (
-          <div className="bg-white p-4 rounded shadow">
-            <p className="mb-4 text-sm text-gray-600">Se o backend fornecer lista de concursos, serão exibidos aqui.</p>
+      {historico.length > 0 && (
+        <div className="mt-8 space-y-6">
+          {historico.map((item, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-lg shadow">
+              <p className="text-xl">
+                <strong>Concurso:</strong> {item.concurso}
+              </p>
+              <p className="text-xl">
+                <strong>Data:</strong> {item.data}
+              </p>
 
-            {/* If backend returned concursos list (API fallback), try to show */}
-            {Array.isArray(historico) ? (
-              <div className="space-y-4">
-                {historico.map((c, idx) => (
-                  <div key={idx} className="p-2 border rounded">
-                    <div className="text-sm text-gray-500">Concurso: {c.numero || c.concurso || '—'}</div>
-                    <div className="flex gap-2 mt-2">
-                      {(c.listaDezenas || c.dezenas || []).map((d,i) => (
-                        <div key={i} className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center font-medium">
-                          {String(d).padStart(2,'0')}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="flex justify-center flex-wrap gap-3 mt-4">
+                {item.numeros?.map((n) => (
+                  <NumeroBolinha key={n} numero={n} dark />
                 ))}
               </div>
-            ) : (
-              <div className="text-sm text-gray-700">
-                Nenhum histórico detalhado disponível via API. Use a rota /estatisticas para estatísticas gerais.
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </MainLayout>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
+
+export default Historico;
