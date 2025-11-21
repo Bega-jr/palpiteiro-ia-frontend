@@ -1,67 +1,48 @@
-import React, { useEffect, useState } from "react";
-import { api } from "../services/api";
-import "./Estatisticas.css";
+import React, { useState } from "react";
 
-function Estatisticas() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [erro, setErro] = useState("");
+function Estatisticas({ API_URL }) {
+  const [estatisticas, setEstatisticas] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const carregar = async () => {
-      try {
-        const data = await api.get("/estatisticas");
-        setStats(data);
-      } catch (e) {
-        setErro("Erro ao carregar estatísticas.");
-        console.error(e);
-      }
+  const carregarEstatisticas = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/estatisticas`);
+      const data = await res.json();
+      setEstatisticas(data);
+    } finally {
       setLoading(false);
-    };
-
-    carregar();
-  }, []);
-
-  if (loading) return <p>Carregando estatísticas...</p>;
-
-  if (erro) return <p className="erro">{erro}</p>;
+    }
+  };
 
   return (
-    <div className="estatisticas-container">
-      <h1>Estatísticas Atualizadas</h1>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-blue-800 mb-6">Estatísticas</h1>
 
-      {!stats ? (
-        <p>Nenhuma estatística disponível.</p>
-      ) : (
-        <div className="stats-grid">
+      <button
+        onClick={carregarEstatisticas}
+        className="bg-indigo-600 text-white px-8 py-3 rounded-lg text-xl"
+      >
+        Carregar Estatísticas
+      </button>
 
-          <div className="stats-card">
-            <h2>Mais Frequentes</h2>
-            {stats.mais_frequentes?.map(([n, f], i) => (
-              <p key={i}>
-                <strong>{n}</strong> → {f}x
-              </p>
-            ))}
-          </div>
+      {loading && <p className="mt-6 text-xl text-gray-700">Carregando...</p>}
 
-          <div className="stats-card">
-            <h2>Menos Frequentes</h2>
-            {stats.menos_frequentes?.map(([n, f], i) => (
-              <p key={i}>
-                <strong>{n}</strong> → {f}x
-              </p>
-            ))}
-          </div>
+      {estatisticas && (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow text-left">
+          <p>
+            <strong>Mais Frequentes:</strong>{" "}
+            {estatisticas.mais_frequentes.map((i) => i[0]).join(", ")}
+          </p>
 
-          <div className="stats-card">
-            <h2>Atrasados</h2>
-            {stats.atrasados?.map(([n, atraso], i) => (
-              <p key={i}>
-                <strong>{n}</strong> → {atraso} concursos
-              </p>
-            ))}
-          </div>
+          <p>
+            <strong>Menos Frequentes:</strong>{" "}
+            {estatisticas.menos_frequentes.map((i) => i[0]).join(", ")}
+          </p>
 
+          <p>
+            <strong>Média da Soma:</strong> {estatisticas.media_soma}
+          </p>
         </div>
       )}
     </div>
@@ -69,3 +50,4 @@ function Estatisticas() {
 }
 
 export default Estatisticas;
+
