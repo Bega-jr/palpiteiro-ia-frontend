@@ -1,35 +1,47 @@
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Outlet, Link, useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "../index";
 
-export default function MainLayout({ children }) {
+export default function MainLayout() {
+  const navigate = useNavigate();
+
+  const logout = async () => {
+    await signOut(auth);
+    navigate("/login");
+  };
+
   return (
-    <div>
-      <header className="bg-white shadow">
-        <div className="container flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <img src="/logo192.png" alt="logo" className="w-10 h-10 rounded" />
-            <div>
-              <h1 className="text-lg font-bold">Palpiteiro IA</h1>
-              <div className="text-xs text-gray-500">Lotofácil — geração inteligente</div>
-            </div>
-          </div>
-          <nav className="flex gap-3">
-            <Link to="/" className="text-sm text-gray-700 hover:text-blue-600">Home</Link>
-            <Link to="/estatisticas" className="text-sm text-gray-700 hover:text-blue-600">Estatísticas</Link>
-            <Link to="/historico" className="text-sm text-gray-700 hover:text-blue-600">Histórico</Link>
-            <Link to="/gerar-avancado" className="text-sm text-gray-700 hover:text-blue-600">Avançado</Link>
-          </nav>
-        </div>
+    <div className="min-h-screen bg-gray-100">
+      
+      {/* HEADER SUPERIOR */}
+      <header className="bg-blue-600 text-white p-4 flex justify-between items-center shadow">
+        <h1 className="text-2xl font-bold">Palpiteiro IA</h1>
+
+        <nav className="flex gap-6 text-lg">
+          <Link className="hover:text-yellow-300" to="/">Home</Link>
+          <Link className="hover:text-yellow-300" to="/estatisticas">Estatísticas</Link>
+          <Link className="hover:text-yellow-300" to="/historico">Histórico</Link>
+          <Link className="hover:text-yellow-300" to="/gerar">Gerar Avançado</Link>
+        </nav>
+
+        <button
+          onClick={logout}
+          className="bg-red-500 px-4 py-2 rounded font-semibold hover:bg-red-600"
+        >
+          Sair
+        </button>
       </header>
 
-      <main className="py-8">
-        {children}
+      {/* CONTEÚDO DAS ROTAS */}
+      <main className="p-6 max-w-5xl mx-auto">
+        <Outlet />
       </main>
 
-      <footer className="bg-white border-t py-4">
-        <div className="container text-sm text-gray-500">
-          Desenvolvido por você · Dados e estatísticas — teste e ajuste
-        </div>
+      <footer className="text-center py-6 text-gray-500">
+        © 2025 Palpiteiro IA — Todos os direitos reservados.
       </footer>
     </div>
   );
 }
+
