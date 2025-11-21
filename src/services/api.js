@@ -1,4 +1,6 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  "https://palpiteiro-ia-backend-docker.onrender.com";
 
 const api = {
   get: async (path) => {
@@ -6,22 +8,22 @@ const api = {
       const token = localStorage.getItem('firebaseToken');
 
       const res = await fetch(API_URL + path, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : ""
         }
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Erro na API: ${res.status} - ${errorText}`);
+        const msg = await res.text();
+        throw new Error(`Erro API (${res.status}): ${msg}`);
       }
 
       return res.json();
-    } catch (err) {
-      console.error("Erro API:", err);
-      throw err;
+    } catch (e) {
+      console.error("Erro API:", e);
+      throw e;
     }
   }
 };
