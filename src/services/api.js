@@ -1,31 +1,39 @@
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+// ARQUIVO: services/api.js
 
-export const api = {
-  get: async (path) => {
-    try {
-      const response = await fetch(`${API_URL}${path}`);
-      if (!response.ok) throw new Error("Erro na requisição GET");
-      return await response.json();
-    } catch (error) {
-      console.error("API GET Error:", error);
-      throw error;
-    }
+import axios from 'axios';
+import { auth } from '../index'; // Importa a instância 'auth' exportada do index.jsx
+
+// 1. Configuração da Instância do Axios
+const api = axios.create({
+  // Use o prefixo correto (VITE_ ou REACT_APP_)
+  baseURL: import.meta.env.VITE_API_URL, 
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  post: async (path, body = {}) => {
+// 2. Interceptor de Requisição para Injetar o Token de Autenticação
+api.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+
+  if (user) {
     try {
-      const response = await fetch(`${API_URL}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      // Obtém o token JWT do usuário logado no Firebase
+      const token = await user.getIdToken(); 
+      
+      // Anexa o token ao cabeçalho 'Authorization' (padrão Bearer)
+      config.headers.Authorization = `Bearer ${token}`; 
 
-      if (!response.ok) throw new Error("Erro na requisição POST");
-
-      return await response.json();
     } catch (error) {
-      console.error("API POST Error:", error);
-      throw error;
+      console.error("Erro ao obter o token Firebase:", error);
+      // Se a obtenção do token falhar, a requisição seguirá sem o token, 
+      // mas o backend deverá rejeitá-la.
     }
   }
-};
+  
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+export { api };
