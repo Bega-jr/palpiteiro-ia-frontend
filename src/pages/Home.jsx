@@ -1,59 +1,61 @@
-import { useState } from 'react';
-import api from '../services/api';
-import LoadingSkeleton from '../components/LoadingSkeleton';
-import PalpiteGrid from '../components/PalpiteGrid';
-import MainLayout from '../layouts/MainLayout';
+import React, { useState } from "react";
+import { api } from "../services/api";
+import "./Home.css";
 
-export default function Home() {
-  const [palpite, setPalpite] = useState(null);
+function Home() {
+  const [tipoAposta, setTipoAposta] = useState("aleatorio");
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState("");
+  const [apostas, setApostas] = useState([]);
 
-  const gerar = async (tipo) => {
-    setLoading(true);
+  const gerarApostas = async () => {
     try {
-      const res = await api.get(`/gerar_apostas?tipo=${tipo}`);
+      setErro("");
+      setLoading(true);
+      setApostas([]);
 
-      if (res.apostas && res.apostas.length > 0) {
-        setPalpite(res.apostas[0]);
+      const data = await api.get(`/apostas/gerar?tipo=${tipoAposta}`);
+      if (data?.apostas) {
+        setApostas(data.apostas);
       } else {
-        setPalpite([]);
+        setErro("Nenhuma aposta retornada da API.");
       }
     } catch (err) {
+      setErro("Erro ao gerar apostas.");
       console.error(err);
-      alert("Erro ao gerar palpites.");
     }
     setLoading(false);
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <section className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold text-blue-800 mb-4">Seu Palpite</h2>
+    <div className="home-container">
+      <h1>Palpiteiro IA</h1>
 
-          {loading ? (
-            <LoadingSkeleton />
-          ) : (
-            <PalpiteGrid numbers={palpite || []} />
-          )}
+      <div className="controls">
+        <label>Selecione o tipo de aposta:</label>
+        <select value={tipoAposta} onChange={(e) => setTipoAposta(e.target.value)}>
+          <option value="aleatorio">Aleatório</option>
+          <option value="estatistico">Estatístico</option>
+        </select>
 
-          <div className="flex justify-center gap-2 mt-4">
-            <button
-              onClick={() => gerar('aleatorio')}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Aleatório
-            </button>
-
-            <button
-              onClick={() => gerar('estatistico')}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Estatístico
-            </button>
-          </div>
-        </section>
+        <button onClick={gerarApostas} disabled={loading}>
+          {loading ? "Gerando..." : "Gerar Apostas"}
+        </button>
       </div>
-    </MainLayout>
+
+      {erro && <p className="erro">{erro}</p>}
+
+      <div className="apostas-lista">
+        {apostas.map((jogo, index) => (
+          <div key={index} className="aposta-card">
+            <strong>Aposta {index + 1}:</strong>
+            <p>{jogo.join(", ")}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
+
+export default Home;
+
