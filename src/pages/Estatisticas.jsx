@@ -1,79 +1,71 @@
-import { useEffect, useState } from 'react';
-import api from '../services/api';
-import LoadingSkeleton from '../components/LoadingSkeleton';
-import PalpiteGrid from '../components/PalpiteGrid';
-import MainLayout from '../layouts/MainLayout';
+import React, { useEffect, useState } from "react";
+import { api } from "../services/api";
+import "./Estatisticas.css";
 
-export default function Estatisticas() {
+function Estatisticas() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+    const carregar = async () => {
       try {
-        const res = await api.get('/estatisticas');
-        setStats(res);
+        const data = await api.get("/estatisticas");
+        setStats(data);
       } catch (e) {
-        console.error('Erro ao buscar estatísticas:', e);
-        setStats({ error: 'Não foi possível obter estatísticas' });
+        setErro("Erro ao carregar estatísticas.");
+        console.error(e);
       }
       setLoading(false);
     };
-    load();
+
+    carregar();
   }, []);
 
+  if (loading) return <p>Carregando estatísticas...</p>;
+
+  if (erro) return <p className="erro">{erro}</p>;
+
   return (
-    <MainLayout>
-      <div className="container space-y-6">
-        <h1 className="text-2xl font-bold text-blue-800">Estatísticas — Lotofácil</h1>
+    <div className="estatisticas-container">
+      <h1>Estatísticas Atualizadas</h1>
 
-        {loading && <LoadingSkeleton />}
+      {!stats ? (
+        <p>Nenhuma estatística disponível.</p>
+      ) : (
+        <div className="stats-grid">
 
-        {!loading && stats?.error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-800">
-            {stats.error}
+          <div className="stats-card">
+            <h2>Mais Frequentes</h2>
+            {stats.mais_frequentes?.map(([n, f], i) => (
+              <p key={i}>
+                <strong>{n}</strong> → {f}x
+              </p>
+            ))}
           </div>
-        )}
 
-        {!loading && !stats?.error && (
-          <div className="grid md:grid-cols-3 gap-6">
-            <section className="bg-white p-6 rounded shadow">
-              <h3 className="font-semibold mb-3">Mais frequentes (top 10)</h3>
-              <div className="flex flex-wrap gap-2">
-                {stats.mais_frequentes?.map(([n, c]) => (
-                  <div key={n} className="px-3 py-2 bg-blue-50 rounded">
-                    <strong>{String(n).padStart(2, '0')}</strong> — {c}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="bg-white p-6 rounded shadow">
-              <h3 className="font-semibold mb-3">Menos frequentes (top 10)</h3>
-              <div className="flex flex-wrap gap-2">
-                {stats.menos_frequentes?.map(([n, c]) => (
-                  <div key={n} className="px-3 py-2 bg-yellow-50 rounded">
-                    <strong>{String(n).padStart(2, '0')}</strong> — {c}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="bg-white p-6 rounded shadow">
-              <h3 className="font-semibold mb-3">Média das somas</h3>
-              <div className="text-4xl font-bold text-indigo-600">
-                {stats.media_soma ?? '—'}
-              </div>
-            </section>
+          <div className="stats-card">
+            <h2>Menos Frequentes</h2>
+            {stats.menos_frequentes?.map(([n, f], i) => (
+              <p key={i}>
+                <strong>{n}</strong> → {f}x
+              </p>
+            ))}
           </div>
-        )}
 
-        <section className="bg-white p-6 rounded shadow">
-          <h3 className="font-semibold mb-3">Visualização de um palpite (exemplo)</h3>
-          <PalpiteGrid numbers={(stats?.mais_frequentes || []).slice(0, 15).map(a=>a[0])} />
-        </section>
-      </div>
-    </MainLayout>
+          <div className="stats-card">
+            <h2>Atrasados</h2>
+            {stats.atrasados?.map(([n, atraso], i) => (
+              <p key={i}>
+                <strong>{n}</strong> → {atraso} concursos
+              </p>
+            ))}
+          </div>
+
+        </div>
+      )}
+    </div>
   );
 }
+
+export default Estatisticas;
