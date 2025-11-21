@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithPopup,
   GoogleAuthProvider,
@@ -23,7 +22,13 @@ function App() {
     "https://palpiteiro-ia-backend-docker.onrender.com";
 
   useEffect(() => {
-    onAuthStateChanged(auth, setUser);
+    onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        const token = await u.getIdToken();
+        localStorage.setItem("firebaseToken", token);
+      }
+    });
   }, []);
 
   const login = () => {
@@ -31,20 +36,26 @@ function App() {
     signInWithPopup(auth, provider);
   };
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    localStorage.removeItem("firebaseToken");
+    signOut(auth);
+  };
 
   const gerarPalpite = async (tipo = "aleatorio") => {
     try {
       setLoading(true);
-      if (!auth.currentUser) return;
 
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`${API_URL}/gerar_palpites?tipo=${tipo}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const token = await auth.currentUser?.getIdToken();
+
+      const res = await fetch(
+        `${API_URL}/apostas/gerar?tipo=${tipo}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
       const data = await res.json();
-      setPalpite(data.palpites?.[0] || []);
+      setPalpite(data.apostas?.[0] || []);
     } finally {
       setLoading(false);
     }
@@ -53,7 +64,7 @@ function App() {
   const carregarHistorico = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/historico`);
+      const res = await fetch(`${API_URL}/estatisticas/historico`);
       const data = await res.json();
       setHistorico(data.sorteios || []);
     } finally {
@@ -75,10 +86,9 @@ function App() {
   const assinarPremium = async () => {
     try {
       setLoading(true);
-      if (!auth.currentUser) return;
-
       const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`${API_URL}/create-checkout-session`, {
+
+      const res = await fetch(`${API_URL}/assinaturas/checkout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,6 +109,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <header className="bg-blue-600 text-white p-6 text-center">
         <h1 className="text-4xl font-bold">Palpiteiro IA</h1>
+
         {user ? (
           <div className="mt-4">
             <span className="mr-4">Olá, {user.displayName}</span>
@@ -119,6 +130,7 @@ function App() {
       <main className="max-w-4xl mx-auto p-6">
         {user ? (
           <>
+            {/* GERAR PALPITE */}
             <section className="mb-10">
               <h2 className="text-3xl font-bold text-blue-800 mb-6">
                 Aposta Sugerida
@@ -158,6 +170,7 @@ function App() {
               </div>
             </section>
 
+            {/* ASSINATURA PREMIUM */}
             <div className="text-center my-12">
               <button
                 onClick={assinarPremium}
@@ -171,6 +184,7 @@ function App() {
               </button>
             </div>
 
+            {/* HISTÓRICO */}
             <section className="mb-10">
               <h2 className="text-3xl font-bold text-blue-800 mb-6">
                 Último Sorteio
@@ -205,6 +219,7 @@ function App() {
               )}
             </section>
 
+            {/* ESTATÍSTICAS */}
             <section>
               <h2 className="text-3xl font-bold text-blue-800 mb-6">
                 Estatísticas
@@ -220,15 +235,11 @@ function App() {
                 <div className="mt-6 bg-white p-6 rounded-lg shadow text-left">
                   <p>
                     <strong>Mais Frequentes:</strong>{" "}
-                    {estatisticas.mais_frequentes
-                      .map((i) => i[0])
-                      .join(", ")}
+                    {estatisticas.mais_frequentes.map((i) => i[0]).join(", ")}
                   </p>
                   <p>
                     <strong>Menos Frequentes:</strong>{" "}
-                    {estatisticas.menos_frequentes
-                      .map((i) => i[0])
-                      .join(", ")}
+                    {estatisticas.menos_frequentes.map((i) => i[0]).join(", ")}
                   </p>
                   <p>
                     <strong>Média da Soma:</strong> {estatisticas.media_soma}
