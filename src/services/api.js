@@ -1,31 +1,31 @@
-const API_URL =
-  process.env.REACT_APP_API_URL ||
-  "https://palpiteiro-ia-backend-docker.onrender.com";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-const api = {
+export const api = {
   get: async (path) => {
     try {
-      const token = localStorage.getItem('firebaseToken');
+      const response = await fetch(`${API_URL}${path}`);
+      if (!response.ok) throw new Error("Erro na requisição GET");
+      return await response.json();
+    } catch (error) {
+      console.error("API GET Error:", error);
+      throw error;
+    }
+  },
 
-      const res = await fetch(API_URL + path, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : ""
-        }
+  post: async (path, body = {}) => {
+    try {
+      const response = await fetch(`${API_URL}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(`Erro API (${res.status}): ${msg}`);
-      }
+      if (!response.ok) throw new Error("Erro na requisição POST");
 
-      return res.json();
-    } catch (e) {
-      console.error("Erro API:", e);
-      throw e;
+      return await response.json();
+    } catch (error) {
+      console.error("API POST Error:", error);
+      throw error;
     }
   }
 };
-
-export default api;
