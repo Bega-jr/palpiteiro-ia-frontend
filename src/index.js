@@ -1,3 +1,5 @@
+// ARQUIVO: index.jsx
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
@@ -7,14 +9,16 @@ import { getAuth } from "firebase/auth";
 
 import "./styles/global.css";
 
+// 🚨 CORREÇÃO DE SEGURANÇA: Chaves carregadas do .env 🚨
 const firebaseConfig = {
-  apiKey: "AIzaSyDIAcBJg1FLwMBAKhAcKePw-bxi1piVlXw",
-  authDomain: "palpiteiro-ia.firebaseapp.com",
-  projectId: "palpiteiro-ia",
-  storageBucket: "palpiteiro-ia.firebasestorage.app",
-  messagingSenderId: "1063099774350",
-  appId: "1:1063099774350:web:fa22f335a19e885e95a0df",
-  measurementId: "G-RP2ZZKMLPF"
+  // Use o prefixo correto para o seu bundler (VITE_ ou REACT_APP_)
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY, 
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
