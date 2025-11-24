@@ -3,11 +3,8 @@ import "../styles/footer.css";
 
 export default function Footer() {
   return (
-    <footer className="footer">
-      <p>© 2025 Palpiteiro IA — Todos os direitos reservados.</p>
-      <p>
-        Desenvolvido com ❤️ por <strong>Bega Jr</strong>.
-      </p>
+    <footer className="main-footer">
+      <p>© {new Date().getFullYear()} Palpiteiro IA — Todos os direitos reservados.</p>
     </footer>
   );
 }
