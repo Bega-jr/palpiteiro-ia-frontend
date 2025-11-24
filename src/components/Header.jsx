@@ -1,18 +1,33 @@
 import React from "react";
-import "../styles/header.css";
 import { Link } from "react-router-dom";
+import { auth } from "../index";
+import { signOut } from "firebase/auth";
+
+import "../styles/header.css";
 
 export default function Header() {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Erro ao deslogar:", error);
+    }
+  };
+
   return (
     <header className="header">
-      <span className="logo">Palpiteiro IA</span>
+      <h1 className="logo">Palpiteiro IA</h1>
 
-      <nav className="nav">
+      <nav className="menu">
         <Link to="/">Home</Link>
-        <Link to="/sobre">Sobre</Link>
-        <Link to="/gerador">Gerador</Link>
-        <Link to="/contato">Contato</Link>
+        <Link to="/estatisticas">Estatísticas</Link>
+        <Link to="/historico">Histórico</Link>
+        <Link to="/gerar">Gerar Avançado</Link>
       </nav>
+
+      <button className="logout-btn" onClick={handleLogout}>
+        Sair
+      </button>
     </header>
   );
 }
