@@ -1,30 +1,29 @@
-import { Link } from "react-router-dom";
+// src/components/Navbar.jsx
+import React from "react";
 
-export default function Navbar() {
+const Navbar = ({ logoUrl }) => {
   return (
-    <nav className="bg-blue-600 text-white px-6 py-4 shadow">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        
-        {/* Logo */}
-        <Link to="/" className="text-2xl font-bold tracking-wide">
-          Palpiteiro IA
-        </Link>
+    <nav className="w-full h-16 bg-white shadow flex items-center px-6 justify-between">
 
-        {/* Menu */}
-        <div className="flex items-center gap-6 text-lg">
-          <Link to="/" className="hover:text-yellow-300 transition">
-            Início
-          </Link>
+      {/* Área do logo — substitua quando tiver a imagem */}
+      <div className="flex items-center">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className="h-10 w-auto object-contain"
+          />
+        ) : (
+          <div className="h-10 w-32 bg-gray-200 rounded-md opacity-40" />
+        )}
+      </div>
 
-          <Link to="/gerar" className="hover:text-yellow-300 transition">
-            Gerar Apostas
-          </Link>
-
-          <Link to="/avancado" className="hover:text-yellow-300 transition">
-            Avançado
-          </Link>
-        </div>
+      {/* Conteúdo à direita */}
+      <div className="flex items-center gap-4">
+        {/* Aqui você coloca seus menus, usuário, ícones etc */}
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;
