@@ -3,9 +3,9 @@ import "../styles/loading.css";
 
 export default function Loading() {
   return (
-    <div className="loading-spinner">
-      <div className="spinner"></div>
-      <p>Carregando...</p>
+    <div className="loading-container">
+      <div className="loading-spinner"></div>
+      <p className="loading-text">Carregando...</p>
     </div>
   );
 }
