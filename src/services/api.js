@@ -1,39 +1,47 @@
-// ARQUIVO: services/api.js
+// ARQUIVO: src/services/api.js
 
-import axios from 'axios';
-import { auth } from '../index'; // Importa a instância 'auth' exportada do index.jsx
+import axios from "axios";
+import { auth } from "../index"; // Firebase Auth inicializado no index.jsx
 
-// 1. Configuração da Instância do Axios
+// ========================================
+// 1. BASE URL com fallback seguro
+// ========================================
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://palpiteiro-ia-backend-docker.onrender.com";
+
+// ========================================
+// 2. Instância do Axios
+// ========================================
 const api = axios.create({
-  // Use o prefixo correto (VITE_ ou REACT_APP_)
-  baseURL: import.meta.env.VITE_API_URL, 
+  baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// 2. Interceptor de Requisição para Injetar o Token de Autenticação
-api.interceptors.request.use(async (config) => {
-  const user = auth.currentUser;
+// ========================================
+// 3. Interceptor → adiciona o token Firebase
+// ========================================
+api.interceptors.request.use(
+  async (config) => {
+    const user = auth.currentUser;
 
-  if (user) {
-    try {
-      // Obtém o token JWT do usuário logado no Firebase
-      const token = await user.getIdToken(); 
-      
-      // Anexa o token ao cabeçalho 'Authorization' (padrão Bearer)
-      config.headers.Authorization = `Bearer ${token}`; 
-
-    } catch (error) {
-      console.error("Erro ao obter o token Firebase:", error);
-      // Se a obtenção do token falhar, a requisição seguirá sem o token, 
-      // mas o backend deverá rejeitá-la.
+    if (user) {
+      try {
+        const token = await user.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+      } catch (e) {
+        console.error("❌ Erro ao obter token Firebase:", e);
+      }
     }
-  }
-  
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
 
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ========================================
+// 4. Exportação
+// ========================================
 export { api };
+
