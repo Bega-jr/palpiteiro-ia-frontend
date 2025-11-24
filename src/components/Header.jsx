@@ -1,33 +1,25 @@
+// src/components/Header.jsx
 import React from "react";
-import { Link } from "react-router-dom";
-import { auth } from "../index";
-import { signOut } from "firebase/auth";
 
-import "../styles/header.css";
-
-export default function Header() {
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error("Erro ao sair:", err);
-    }
-  };
-
+const Header = ({ logoUrl, title }) => {
   return (
-    <header className="header">
-      <h1 className="header-title">Palpiteiro IA</h1>
+    <header className="w-full bg-gray-50 py-6 px-6 flex items-center gap-6 shadow-sm">
 
-      <nav className="header-nav">
-        <Link to="/">Home</Link>
-        <Link to="/estatisticas">Estatísticas</Link>
-        <Link to="/historico">Histórico</Link>
-        <Link to="/gerar">Gerador Avançado</Link>
-      </nav>
+      {/* Logo opcional */}
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="Logo"
+          className="h-14 w-auto object-contain"
+        />
+      ) : (
+        <div className="h-14 w-40 bg-gray-200 rounded-md opacity-40" />
+      )}
 
-      <button onClick={handleLogout} className="logout-btn">
-        Sair
-      </button>
+      {/* Título do sistema */}
+      <h1 className="text-2xl font-semibold text-gray-800">{title}</h1>
     </header>
   );
-}
+};
+
+export default Header;
