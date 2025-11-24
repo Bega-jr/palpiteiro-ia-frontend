@@ -1,3 +1,5 @@
+// ARQUIVO: src/App.jsx
+
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -49,7 +51,7 @@ export default function App() {
           <Route path="gerar" element={<GerarAvancado />} />
         </Route>
 
-        {/* QUALQUER OUTRA ROTA */}
+        {/* REDIRECIONAR QUALQUER ROTA DESCONHECIDA */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
