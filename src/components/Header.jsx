@@ -9,23 +9,23 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-    } catch (error) {
-      console.error("Erro ao deslogar:", error);
+    } catch (err) {
+      console.error("Erro ao sair:", err);
     }
   };
 
   return (
     <header className="header">
-      <h1 className="logo">Palpiteiro IA</h1>
+      <h1 className="header-title">Palpiteiro IA</h1>
 
-      <nav className="menu">
+      <nav className="header-nav">
         <Link to="/">Home</Link>
         <Link to="/estatisticas">Estatísticas</Link>
         <Link to="/historico">Histórico</Link>
-        <Link to="/gerar">Gerar Avançado</Link>
+        <Link to="/gerar">Gerador Avançado</Link>
       </nav>
 
-      <button className="logout-btn" onClick={handleLogout}>
+      <button onClick={handleLogout} className="logout-btn">
         Sair
       </button>
     </header>
