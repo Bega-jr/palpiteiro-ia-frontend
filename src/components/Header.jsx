@@ -1,39 +1,43 @@
-import { auth } from "../firebase";
-import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+// CAMINHO CORRETO DO ARQUIVO:
+// src/components/Header.jsx
 
-export default function Header({ user }) {
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
 
-  const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
+export default function Header() {
+  const location = useLocation();
 
-  const logout = async () => {
-    await signOut(auth);
-  };
+  const isActive = (path) =>
+    location.pathname === path
+      ? "text-indigo-600 font-bold"
+      : "text-gray-700 hover:text-indigo-600";
 
   return (
-    <header className="bg-blue-600 text-white p-6 text-center">
-      <h1 className="text-4xl font-bold">Palpiteiro IA</h1>
+    <header className="bg-white shadow mb-6">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-indigo-700">
+          Palpiteiro IA
+        </h1>
 
-      {user ? (
-        <div className="mt-4">
-          <span className="mr-4">Olá, {user.displayName}</span>
-          <button
-            onClick={logout}
-            className="bg-red-500 px-4 py-2 rounded hover:bg-red-600"
-          >
-            Sair
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={login}
-          className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold text-xl mt-4 hover:bg-gray-100"
-        >
-          Login com Google
-        </button>
-      )}
+        <nav className="flex space-x-6 text-lg">
+          <Link to="/" className={isActive("/")}>
+            Início
+          </Link>
+
+          <Link to="/estatisticas" className={isActive("/estatisticas")}>
+            Estatísticas
+          </Link>
+
+          <Link to="/historico" className={isActive("/historico")}>
+            Histórico
+          </Link>
+
+          <Link to="/gerar-avancado" className={isActive("/gerar-avancado")}>
+            Avançado
+          </Link>
+        </nav>
+      </div>
     </header>
   );
 }
+
