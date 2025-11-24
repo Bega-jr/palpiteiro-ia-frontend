@@ -1,11 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* Estilos globais adicionais, se necessário */
+/* Fonte padrão */
 body {
-    /* Define a fonte 'Inter' como fallback, se já não estiver definida globalmente */
-    font-family: 'Inter', sans-serif;
-    /* Define uma cor de fundo padrão para todo o corpo, usando uma classe utilitária do Tailwind para consistência */
-    background-color: #f3f4f6; 
+  font-family: "Inter", sans-serif;
+  background-color: #f4f4f4;
+  color: #222;
+  line-height: 1.6;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
 }
